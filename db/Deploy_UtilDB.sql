@@ -32,19 +32,6 @@ CREATE TABLE [dbo].[MonthCheckList](
 
 GO
 
-/* 20 ************************************************/
-CREATE PROCEDURE GetDriveSpaceFree
-AS
-DECLARE @driveSpace TABLE (drive CHAR(2), MBFree int)
-INSERT INTO @driveSpace
-EXEC sp_executesql N'xp_fixeddrives'
-
-INSERT INTO dbstats..daychecklist
-	SELECT 'Drive Space', GETDATE(), 'Free space on ' + drive + ' is ' + CONVERT (VARCHAR(20), MBFree/1024) + ' Gigs' 
-		FROM @driveSpace
-
-/* 25 ************************************************/
-
 -- Using For Each DB to capture File Growth
 
 CREATE TABLE [dbo].[File_growth](
@@ -65,6 +52,42 @@ SET ANSI_PADDING OFF
 GO
 
 ALTER TABLE [dbo].[File_growth] ADD  DEFAULT (getdate()) FOR [Reading_date]
+GO
+
+
+
+/* 50 **********************************************************************/
+CREATE TABLE [dbo].[IndexFrag](
+	[IndexFrag] [int] IDENTITY(1,1) NOT NULL,
+	[DatabaseName] [varchar](100) NOT NULL,
+	[TableName] [varchar](100) NOT NULL,
+	[IndexName] [varchar](200) NULL,
+	[PercentFragmented] [int] NOT NULL,
+ CONSTRAINT [PK_IndexFrag] PRIMARY KEY CLUSTERED 
+(
+	[IndexFrag] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
+/* 20 ************************************************/
+CREATE PROCEDURE GetDriveSpaceFree
+AS
+DECLARE @driveSpace TABLE (drive CHAR(2), MBFree int)
+INSERT INTO @driveSpace
+EXEC sp_executesql N'xp_fixeddrives'
+
+INSERT INTO dbstats..daychecklist
+	SELECT 'Drive Space', GETDATE(), 'Free space on ' + drive + ' is ' + CONVERT (VARCHAR(20), MBFree/1024) + ' Gigs' 
+		FROM @driveSpace
+
+/* 25 ************************************************/
+
 GO
 
 
@@ -134,22 +157,6 @@ INSERT INTO dbstats..daychecklist
 
 
 
-/* 50 **********************************************************************/
-CREATE TABLE [dbo].[IndexFrag](
-	[IndexFrag] [int] IDENTITY(1,1) NOT NULL,
-	[DatabaseName] [varchar](100) NOT NULL,
-	[TableName] [varchar](100) NOT NULL,
-	[IndexName] [varchar](200) NULL,
-	[PercentFragmented] [int] NOT NULL,
- CONSTRAINT [PK_IndexFrag] PRIMARY KEY CLUSTERED 
-(
-	[IndexFrag] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-
-GO
-
-SET ANSI_PADDING OFF
 GO
 
 Create Procedure GetIndexFragPercent
