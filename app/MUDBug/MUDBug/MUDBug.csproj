@@ -65,7 +65,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\DriveSpacesController.cs" />
+    <Compile Include="Controllers\ErrorLogController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\RestartController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -140,7 +143,6 @@
     <Content Include="Content\themes\base\jquery.ui.slider.css" />
     <Content Include="Content\themes\base\jquery.ui.tabs.css" />
     <Content Include="Content\themes\base\jquery.ui.theme.css" />
-    <Content Include="EF4Templates.txt" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\jquery-1.5.1-vsdoc.js" />
     <Content Include="Scripts\jquery-1.5.1.js" />
@@ -209,6 +211,21 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MUDBugModel.cs</LastGenOutput>
     </None>
+    <Content Include="Views\ErrorLog\Index.cshtml" />
+    <Content Include="Views\ErrorLog\Details.cshtml" />
+    <Content Include="Views\ErrorLog\Create.cshtml" />
+    <Content Include="Views\ErrorLog\Edit.cshtml" />
+    <Content Include="Views\ErrorLog\Delete.cshtml" />
+    <Content Include="Views\DriveSpaces\Index.cshtml" />
+    <Content Include="Views\DriveSpaces\Details.cshtml" />
+    <Content Include="Views\DriveSpaces\Create.cshtml" />
+    <Content Include="Views\DriveSpaces\Edit.cshtml" />
+    <Content Include="Views\DriveSpaces\Delete.cshtml" />
+    <Content Include="Views\Restart\Index.cshtml" />
+    <Content Include="Views\Restart\Details.cshtml" />
+    <Content Include="Views\Restart\Create.cshtml" />
+    <Content Include="Views\Restart\Edit.cshtml" />
+    <Content Include="Views\Restart\Delete.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />

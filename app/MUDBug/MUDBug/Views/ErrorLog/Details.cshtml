@@ -1,0 +1,35 @@
+﻿@model MUDBug.Models.MUDBugErrorLog
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>Details</h2>
+
+<fieldset>
+    <legend>MUDBugErrorLog</legend>
+
+    <div class="display-label">DayID</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.DayID)
+    </div>
+
+    <div class="display-label">EventStatus</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.EventStatus)
+    </div>
+
+    <div class="display-label">EventDate</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.EventDate)
+    </div>
+
+    <div class="display-label">EVENT</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.EVENT)
+    </div>
+</fieldset>
+<p>
+    @Html.ActionLink("Edit", "Edit", new { /* id=Model.PrimaryKey */ }) |
+    @Html.ActionLink("Back to List", "Index")
+</p>

@@ -1,0 +1,38 @@
+﻿@model MUDBug.Models.MUDBugErrorLog
+
+@{
+    ViewBag.Title = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<fieldset>
+    <legend>MUDBugErrorLog</legend>
+
+    <div class="display-label">DayID</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.DayID)
+    </div>
+
+    <div class="display-label">EventStatus</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.EventStatus)
+    </div>
+
+    <div class="display-label">EventDate</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.EventDate)
+    </div>
+
+    <div class="display-label">EVENT</div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.EVENT)
+    </div>
+</fieldset>
+@using (Html.BeginForm()) {
+    <p>
+        <input type="submit" value="Delete" /> |
+        @Html.ActionLink("Back to List", "Index")
+    </p>
+}

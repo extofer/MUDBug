@@ -1,0 +1,33 @@
+﻿@model IEnumerable<MUDBug.Models.MUDBugErrorLog>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Event Logs</h2>
+
+<p>
+   
+</p>
+<table>
+    <tr>
+        <th>
+            EventDate
+        </th>
+        <th>
+            Event
+        </th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.DisplayFor(modelItem => item.EventDate)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.EVENT)
+        </td>
+    </tr>
+}
+
+</table>

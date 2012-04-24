@@ -1,0 +1,33 @@
+﻿@model IEnumerable<MUDBug.Models.MUDBUGDriveSpace>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Drive Spaces</h2>
+
+
+<table>
+    <tr>
+       <th>
+            Event Date
+        </th>
+        <th>
+            Event
+        </th>
+
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.DisplayFor(modelItem => item.EventDate)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.EVENT)
+        </td>
+        
+    </tr>
+}
+
+</table>

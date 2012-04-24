@@ -1,0 +1,57 @@
+﻿@model MUDBug.Models.MUDBugErrorLog
+
+@{
+    ViewBag.Title = "Edit";
+}
+
+<h2>Edit</h2>
+
+<script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")" type="text/javascript"></script>
+
+@using (Html.BeginForm()) {
+    @Html.ValidationSummary(true)
+    <fieldset>
+        <legend>MUDBugErrorLog</legend>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.DayID)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.DayID)
+            @Html.ValidationMessageFor(model => model.DayID)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.EventStatus)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.EventStatus)
+            @Html.ValidationMessageFor(model => model.EventStatus)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.EventDate)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.EventDate)
+            @Html.ValidationMessageFor(model => model.EventDate)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.EVENT)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.EVENT)
+            @Html.ValidationMessageFor(model => model.EVENT)
+        </div>
+
+        <p>
+            <input type="submit" value="Save" />
+        </p>
+    </fieldset>
+}
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>

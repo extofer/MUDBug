@@ -2,7 +2,13 @@
     ViewBag.Title = "Home Page";
 }
 
-<h2>@ViewBag.Message</h2>
+<h2>MUDBug Beta</h2>
 <p>
-    To learn more about ASP.NET MVC visit <a href="http://asp.net/mvc" title="ASP.NET MVC Website">http://asp.net/mvc</a>.
+    <ui>
+        <li>@Html.ActionLink("Error Logs", "Index", "ErrorLog")</li>
+        <li>@Html.ActionLink("Drive Space", "Index", "DriveSpaces")</li>
+        <li>@Html.ActionLink("Restart", "Index", "Restart")</li>
+        
+    </ui>
+
 </p>
