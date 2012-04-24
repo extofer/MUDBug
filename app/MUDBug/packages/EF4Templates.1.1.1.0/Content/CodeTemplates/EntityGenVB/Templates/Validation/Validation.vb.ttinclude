@@ -1,0 +1,148 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="Template.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class ValidationVb
+	Inherits Template
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+#>
+<#=EfUtils.WriteHeader()#>
+Imports System.ComponentModel.DataAnnotations
+Imports System.ComponentModel
+<#+If EntityGenerator.Technology = DefTechnology.WPF Then#>
+Imports System.Reflection
+<#+End If#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+	PushIndent(CodeRegion.GetIndent(1))
+#>
+<#+If EntityGenerator.Technology = DefTechnology.WPF Then#>
+''' <summary>
+''' Validating translater class for WPF using a sidecar metadata class like RIA services
+''' </summary>
+''' <typeparam name="T">The model class</typeparam>
+''' <typeparam name="U">The model metadata class which must have the data 
+''' annotations on the property, and the property must exist.</typeparam>
+''' <remarks></remarks>
+Public Class Validatable(Of T, U)
+    Implements IDataErrorInfo
+
+    ''' <summary>
+    ''' Returns the errors reported
+    ''' </summary>
+    ''' <value></value>
+    ''' <returns>String with the errors</returns>
+    ''' <remarks></remarks>
+    Public Overridable ReadOnly Property [Error] As String Implements System.ComponentModel.IDataErrorInfo.Error
+        Get
+            Throw New NotImplementedException()
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Needed to get the property value. Is there a better way to do this?
+    ''' </summary>
+    ''' <value></value>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
+    Public Property ParentObject() As Object
+
+    ''' <summary>
+    ''' Gets an item by the column name
+    ''' </summary>
+    ''' <param name="columnName"></param>
+    ''' <value></value>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
+    Default Public Overridable ReadOnly Property Item(ByVal columnName As String) As String Implements System.ComponentModel.IDataErrorInfo.Item
+        Get
+            If ParentObject Is Nothing Then Return String.Empty
+
+            ' Get the property from the metadata class and DataAnnotations attributes
+            Dim prop As PropertyInfo = GetType(U).GetProperty(columnName)
+            Dim validationMap = prop.GetCustomAttributes(GetType(ValidationAttribute), True)
+
+            For Each v As ValidationAttribute In validationMap
+                Try
+                    ' Get the actual value and validate it
+                    Dim pp As PropertyInfo = ParentObject.GetType().GetProperty(columnName)
+                    Dim value As Object = pp.GetValue(ParentObject, Nothing)
+                    v.Validate(value, columnName)
+                Catch ex As Exception
+                    Return ex.Message
+                End Try
+            Next
+
+            Return Nothing
+        End Get
+    End Property
+
+End Class
+
+<#+End If#>
+<#+
+For Each loopEntity As EntityType In EntityGenerator.ItemCollection.GetItems(Of EntityType)().OrderBy(Function(e) e.Name)
+    Dim entity As EntityType = loopEntity	
+#>
+<#+region.Begin(code.Escape(Entity))#>
+
+	<MetadataType(GetType(<#=code.Escape(entity.Name + "Metadata")#>))>
+	Partial <#=Accessibility.ForType(entity)#> <#=code.SpaceAfter(code.MustInheritOption(entity))#>Class <#=code.Escape(entity.Name)#>
+<#+If EntityGenerator.Technology = DefTechnology.WPF Then#>
+	    Inherits Validatable(Of <#=code.Escape(entity.Name)#>, <#=code.Escape(entity.Name + "Metadata")#>)
+
+		''' <summary>
+        ''' <c><#=code.Escape(entity.Name)#></c> constructor
+        ''' </summary>
+		<#=Accessibility.ForType(entity)#> Sub New()
+			' Required for the validator
+			ParentObject = Me
+		End Sub
+<#+End If#>
+
+	End Class
+
+	''' <summary>
+	''' Metadata for the <#=code.Escape(entity.Name)#> class
+	''' </summary>
+	''' <remarks>Required for validation</remarks>
+    ''' <seealso cref="<#=code.Escape(entity.Name)#>">Model: <#=code.Escape(entity.Name)#></seealso>
+	Partial <#=Accessibility.ForType(entity)#> <#=code.SpaceAfter(code.MustInheritOption(entity))#>Class <#=code.Escape(entity.Name + "Metadata")#>
+		
+<#+
+    For Each edmProperty As EdmProperty In entity.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is entity)
+#>
+		''' <summary>
+        ''' <#=code.Escape(edmProperty)#> buddy property
+        ''' </summary>
+		<#=EfUtils.GetPropertyValidationAttributes(ef, code, edmProperty)#>	
+		<#=Accessibility.ForProperty(edmProperty)#> Property <#=code.Escape(edmProperty)#>() As <#=code.Escape(edmProperty.TypeUsage)#>
+
+<#+
+	Next
+#>
+	End Class
+
+<#+region.End()#>
+<#=" "#>
+<#+
+Next
+#>
+<#+
+	PopIndent()
+#>
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

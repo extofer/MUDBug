@@ -1,0 +1,30 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="Template.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class DataServiceSvc
+	Inherits Template
+
+	Private Function GetNamespace() as String
+		If Not String.IsNullOrEmpty(EntityGenerator.NamespaceName) Then
+			return EntityGenerator.NamespaceName + "."
+		Else
+			return ""
+		End If
+	End Function
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+#>
+<%@ ServiceHost Language="<#=EntityGenerator.LanguageString.ToUpperInvariant()#>" Factory="System.Data.Services.DataServiceHostFactory, System.Data.Services, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" 
+	Service="<#=GetNamespace()#><#=code.Escape(EntityGenerator.EntityContainerName + "DataService")#>" %>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

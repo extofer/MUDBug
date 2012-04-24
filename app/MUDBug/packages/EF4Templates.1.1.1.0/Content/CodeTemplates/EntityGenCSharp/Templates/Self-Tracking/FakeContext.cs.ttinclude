@@ -1,0 +1,222 @@
+﻿<#+
+// <copyright file="Context.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class FakeContextCs : Template
+{
+	string AccessibilityAndVirtual(string accessibility)
+	{
+		if (accessibility != "private")
+		{
+			return accessibility + " virtual";
+		}
+
+		return accessibility;
+	}
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);
+		
+		string namespaceName = EntityGenerator.NamespaceName;
+		
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+		
+#>
+<#=EfUtils.WriteContextHeader(new string[] {"System", "System.Collections.Generic", "System.Data.Objects", "System.Linq"})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+// You really should copy this out of the generated folder, and edit as necessary.
+
+
+/// <summary>
+/// Fake entity context
+/// </summary>
+public partial class FakeObjectSet<T> : IObjectSet<T> where T : class
+{
+
+	private readonly IList<T> _Container = new List<T>();
+
+    /// <summary>
+    /// Gets the enumerator for the fake objectset
+    /// </summary>
+    /// <returns>IEnumerator(of T)</returns>
+	public System.Collections.Generic.IEnumerator<T> GetEnumerator()
+	{
+		return _Container.GetEnumerator();
+	}
+
+    /// <summary>
+    /// Gets the enumerator for the fake objectset
+    /// </summary>
+    /// <returns>IEnumerator(of T)</returns>
+	public System.Collections.IEnumerator GetTheEnumerator()
+	{
+		return this.GetEnumerator();
+	}
+
+    /// <summary>
+    /// Gets the enumerator for the fake objectset
+    /// </summary>
+    /// <returns>IEnumerator(of T)</returns>
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+	{
+		return GetTheEnumerator();
+	}
+
+	/// <summary>
+	/// Adds the entity to the fake collection
+	/// </summary>
+	/// <param name="entity">Entity to add</param>
+	public void AddObject(T entity)
+	{
+        if (!_Container.Contains<T>(entity))
+			_Container.Add(entity);
+	}
+
+	/// <summary>
+	/// Adds the entity to the fake collection
+	/// </summary>
+	/// <param name="entity">Entity to add</param>
+	public void Attach(T entity)
+	{
+        if (!_Container.Contains<T>(entity))
+			_Container.Add(entity);
+	}
+
+    /// <summary>
+    /// Deletes the entity from the fake collection
+    /// </summary>
+    /// <param name="entity">Entity to delete</param>
+	public void DeleteObject(T entity)
+	{
+        if (_Container.Contains<T>(entity))
+			_Container.Remove(entity);
+	}
+
+    /// <summary>
+    /// Deletes the entity from the fake collection
+    /// </summary>
+    /// <param name="entity">Entity to delete</param>
+	public void Detach(T entity)
+	{
+        if (_Container.Contains<T>(entity))
+			_Container.Remove(entity);
+	}
+
+    /// <summary>
+    /// Gets the type of entity
+    /// </summary>
+	public System.Type ElementType {
+		get { return typeof(T); }
+	}
+
+    /// <summary>
+    /// Gets the linq expression
+    /// </summary>
+	public System.Linq.Expressions.Expression Expression {
+		get { return _Container.AsQueryable().Expression; }
+	}
+
+    /// <summary>
+    /// Gets the linq provider
+    /// </summary>
+	public System.Linq.IQueryProvider Provider {
+		get { return _Container.AsQueryable().Provider; }
+	}
+
+}
+
+/// <summary>
+/// Fake entity objectsets for testing
+/// </summary>
+<#=Accessibility.ForType(container)#> partial class <#=code.Escape("Fake" + container.Name)#> : IContext, IDisposable
+{	
+
+	<#+region.Begin("Constructors");#>
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+	public <#=code.Escape("Fake" + container.Name)#>()
+	{
+		Initialize();
+	}
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="connectionString">Connection string</param>
+	/// <remarks>To maintain compatibility with the real context</remarks>
+	public <#=code.Escape("Fake" + container.Name)#>(string connectionString)
+	{
+		Initialize();
+		// This is for Code Analysis error CA1801. 
+		// Not really needed but kept to maintain functionality with
+		// the real context.
+		System.Diagnostics.Debug.WriteLine(String.Format("Connection string: {0}", connectionString));
+	}
+
+	/// <summary>
+	/// Initialize fake data for the fake context
+	/// </summary>
+	public void Initialize()
+	{
+		//TODO: Initialize the fake context
+	}
+
+	<#+region.End();#>
+
+	<#+region.Begin("ObjectSet Properties");#>
+
+<#+
+	foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>()) {
+#>
+	private IObjectSet<<#=code.Escape(entitySet.ElementType)#>> _<#=code.Escape(entitySet)#> = new FakeObjectSet<<#=code.Escape(entitySet.ElementType)#>>();
+
+    /// <summary>
+    /// Gets the fake <#=code.Escape(entitySet)#> IObjectSet
+    /// </summary>
+	public virtual IObjectSet<<#=code.Escape(entitySet.ElementType)#>> <#=code.Escape(entitySet)#>
+	{
+		get { return _<#=code.Escape(entitySet)#>; }
+	}
+<#+
+	}
+#>
+	<#+region.End();#>
+
+    /// <summary>
+    /// Persists the changes to the database
+    /// </summary>
+    /// <returns>The number of records affected</returns>
+    public int Save() { return System.Convert.ToInt32(1); }
+
+    #region IDisposable Members
+
+    /// <summary>
+    /// IDisposable
+    /// </summary>
+    public void Dispose()
+    {
+        // throw new NotImplementedException();
+    }
+
+    #endregion
+
+}	
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

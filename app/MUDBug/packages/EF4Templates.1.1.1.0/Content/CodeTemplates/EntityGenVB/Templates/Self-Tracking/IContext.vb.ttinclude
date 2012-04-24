@@ -1,0 +1,57 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="Template.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class IContextVb
+	Inherits Template
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "' No EntityContainer exists in the model, so no code was generated"
+		End If
+#>
+<#=EfUtils.WriteContextHeader()#>
+Imports System.Data.Objects
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+''' <summary>
+''' Interface for the context to enable unit testing and fake context
+''' </summary>
+Public Interface IContext
+        Inherits IDisposable
+		
+<#+
+
+	PushIndent(CodeRegion.GetIndent(1))
+	For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)()
+		Dim entity as System.Data.Metadata.Edm.EntityType = entitySet.ElementType
+#>
+	''' <summary><#=code.Escape(entitySet)#> IObjectSet</summary>
+	ReadOnly Property <#=code.Escape(entitySet)#>() As IObjectSet(Of <#=code.Escape(entity)#>)
+<#+ 
+	Next 
+#>
+
+    ''' <summary>Persists the changes to the database</summary>
+    ''' <returns>The number of records affected</returns>
+	Function Save() as Integer
+	
+<#+
+	PopIndent()
+#>
+
+End Interface
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

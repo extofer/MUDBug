@@ -1,0 +1,315 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="EntityRepoTest.vb.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class EntityRepoTestVb
+	Inherits Template
+
+	Private Function FixCase(text)
+		Dim r as String = ""
+		
+		If Not String.IsNullOrEmpty(text) Then
+			r = text.Substring(0, 1).ToLowerInvariant()
+			r += text.Substring(1)
+		End If
+		return String.Empty
+	End Function
+	
+	Private Function GetIdKey(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += "ByVal " + code.Escape(edmProperty) + " as " + code.Escape(edmProperty.TypeUsage) + ", "
+			End If
+		Next
+		If idKey.EndsWith(", ") Then idKey = idKey.Substring(0, idKey.Length -2).Trim()
+		return idKey
+	End Function
+
+	Private Function GetIdKeyParams(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += code.Escape(edmProperty) + ", "
+			End If
+		Next
+		If idKey.EndsWith(", ") Then idKey = idKey.Substring(0, idKey.Length -2).Trim()
+		return idKey
+	End Function
+
+	Private Function GetIdKeyXmlDoc(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim s as String = "''' <param name=""{0}"">{1} (primary key field)</param>"	
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += String.Format(s, FixCase(code.Escape(edmProperty)), EfUtils.ParseCamelToProper(code.Escape(edmProperty))) + System.Environment.NewLine
+			End If
+		Next
+		If Not String.IsNullOrEmpty(idKey) Then if idKey.EndsWith(System.Environment.NewLine) Then idKey = idKey.Substring(0, idkey.Length - (System.Environment.NewLine.Length))
+		return idKey
+	End Function
+
+	Private Function GetIdKeyLinq(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += "g." + code.Escape(edmProperty) + " = " + FixCase(code.Escape(edmProperty)) + " and "
+			End If
+		Next
+		If Not String.IsNullOrEmpty(idKey) Then idKey = idKey.Substring(0, idKey.Length -5).Trim()
+		return idKey
+	End Function
+
+	Public Function GetKeyPropName(entity As EntityType, ef As MetadataTools, code As CodeGenerationTools) As String
+		Dim RetVal As String = String.Empty
+
+		For Each edmProperty As EdmProperty In entity.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is entity)
+			If ef.IsKey(edmProperty) Then
+				RetVal = code.Escape(edmProperty)
+				Exit For
+			End If
+		Next
+		Return RetVal
+	End Function
+
+	Public Function GetSampleData(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal fieldName as String, ByVal fieldType as String, ByVal prop as EdmProperty) as String
+		Dim idKey as String = String.Empty
+		If fieldType.ToLowerInvariant() = "string" Then
+			Dim MaxLen as Integer = Efutils.GetPropertyLength(code, prop)
+			If (MaxLen > 100) Then MaxLen = 100
+			For i As Integer = 0 to MaxLen -1
+				dim rnd as New Random()
+				Dim r as Integer = rnd.next(1, 26)
+				idKey += "A"
+			Next
+			return GetQuotes() + idKey + GetQuotes()
+		End If
+		If fieldType.ToLowerInvariant().Contains("boolean") then return "True"
+		If fieldType.ToLowerInvariant().Contains("datetime") then Return "DateTime.Now"
+		If fieldType.ToLowerInvariant().Contains("date") Then Return "DateTime.Now"
+		If fieldType.ToLowerInvariant() = "guid" Then Return "Guid.NewGuid()"
+		return "1"
+	End Function
+
+	Public Function GetQuotes() as string
+		Return """"
+	End Function
+
+	Public Function GetKeyCreationCode(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += "entity." + code.Escape(edmProperty) + " = " + GetSampleData(code, ef, code.Escape(edmProperty), code.Escape(edmProperty.TypeUsage), edmProperty) + _
+				" ' " +  code.Escape(edmProperty.TypeUsage) +  System.Environment.NewLine
+			End If
+		Next
+		return idKey
+	End Function
+
+	Public Function GetKeyParamCode(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += "entity." + code.Escape(edmProperty) + ", "
+			End If
+		Next
+		If Not String.IsNullOrEmpty(idKey) Then If idKey.EndsWith(", ") Then idKey = idKey.Substring(0, idKey.Length -2).Trim()
+		return idKey
+	End Function
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+		
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "// No EntityContainer exists in the model, so no code was generated"
+		End If
+		
+#>
+<#=EfUtils.WriteHeader()#>
+
+Imports System
+Imports System.Collections 
+Imports System.Collections.Generic
+Imports System.Linq
+Imports Microsoft.VisualStudio.TestTools.UnitTesting
+Imports <#=EntityGenerator.NamespaceName#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+<#+
+	PushIndent(CodeRegion.GetIndent(1))
+#>
+
+	''' <summary>
+	''' This is a test class for EntityRepoTest and is intended
+	''' to contain all EntityRepoTest Unit Tests
+	'''</summary>
+	<TestClass> _
+	Public Class EntityRepoTest
+
+		''' <summary>
+		''' A test for EntityRepo Constructor
+		'''</summary>
+		<TestMethod> _
+		Public Sub EntityRepo_Constructor_ShouldNotBeNull()
+			Dim target As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+
+				target = New EntityRepo(c)
+			End Using
+
+			Assert.IsNotNull(target)
+		End Sub
+<#+  
+	For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)()
+		Dim entity as System.Data.Metadata.Edm.EntityType = entitySet.ElementType
+#>
+		#Region "<#=code.Escape(entity.Name + "Repo")#>"
+
+		''' <summary>
+		''' Test for whether the EntityRepo.<#=code.Escape(entity.Name)#> is null
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity.Name + "Repo")#>_RepoProperty_ShouldNotBeNull()
+			Dim target As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+
+				target = New EntityRepo(c)
+			End Using
+
+			Assert.IsNotNull(target.<#=code.Escape(entity)#>)
+		End Sub
+
+		''' <summary>
+		''' Test for whether the <#=code.Escape(entity.Name)#> constructor returns null
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity)#>_Constructor_ShouldNotBeNull()
+			Dim target As New <#=code.Escape(entity)#>()
+			Assert.IsNotNull(target)
+		End Sub
+
+		''' <summary>
+		''' Test for whether the <#=code.Escape(entity.Name)#> Add method returns one
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity.Name + "Repo")#>_Add_CountShouldBeOne()
+			Dim actual As Integer = 0
+			Dim expected As Integer = 1
+			Dim repo As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+				repo = New EntityRepo(c)
+				Dim target As New <#=code.Escape(entity)#>()
+				repo.<#=code.Escape(entity)#>.Add(target)
+				actual = repo.Commit()
+				Dim errors As String = repo.<#=code.Escape(entity)#>.ValidationErrors
+			End Using
+
+			Assert.AreEqual(Of Integer)(expected, actual)
+		End Sub
+
+		''' <summary>
+		''' Test for whether the <#=code.Escape(entity.Name)#> Delete method returns zero
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity.Name + "Repo")#>_Delete_CountShouldBeZero()
+			Dim actual As Integer = 0
+			Dim expected As Integer = 0
+			Dim repo As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+				repo = New EntityRepo(c)
+				Dim target As New <#=code.Escape(entity)#>()
+				repo.<#=code.Escape(entity)#>.Add(target)
+
+				repo.<#=code.Escape(entity)#>.Delete(target)
+				actual = repo.<#=code.Escape(entity)#>.List().Count()
+			End Using
+
+			Assert.AreEqual(Of Integer)(expected, actual)
+		End Sub
+
+		''' <summary>
+		''' Test for whether the <#=code.Escape(entity.Name)#> Update method returns one
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity.Name + "Repo")#>_Update_CountShouldBeOne()
+			Dim actual As Integer = 0
+			Dim expected As Integer = 1
+			Dim repo As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+				repo = New EntityRepo(c)
+				Dim target As New <#=code.Escape(entity)#>()
+				repo.<#=code.Escape(entity)#>.Add(target)
+
+				repo.<#=code.Escape(entity)#>.Update(target)
+				actual = repo.<#=code.Escape(entity)#>.List().Count()
+			End Using
+
+			Assert.AreEqual(Of Integer)(expected, actual)
+		End Sub
+
+		''' <summary>
+		''' Test for whether the <#=code.Escape(entity.Name)#> GetById returns null
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity.Name + "Repo")#>_GetById_ShouldNotBeNull()
+			Dim target As <#=code.Escape(entity)#> = Nothing
+
+			Dim entity As New <#=code.Escape(entity)#>()
+			<#=GetkeyCreationCode(code, ef, entity)#>
+			Dim repo As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+				repo = New EntityRepo(c)
+				repo.<#=code.Escape(entity)#>.Add(entity)
+				repo.Commit()
+
+				target = repo.<#=code.Escape(entity)#>.GetById(<#=GetKeyParamCode(code, ef, entity)#>)
+			End Using
+
+			Assert.IsNotNull(target)
+		End Sub
+
+		''' <summary>
+		''' Test for whether the <#=code.Escape(entity.Name)#> DeleteById method returns zero
+		'''</summary>
+		<TestMethod> _
+		Public Sub <#=code.Escape(entity.Name + "Repo")#>_DeleteById_CountShouldBeZero()
+			Dim expected As Integer = 0
+			Dim target As Integer = 0
+
+			Dim entity As New <#=code.Escape(entity)#>()
+			<#=GetkeyCreationCode(code, ef, entity)#>
+			Dim repo As EntityRepo = Nothing
+			Using c As New <#=code.Escape("Fake" + container.Name)#>()
+				repo = New EntityRepo(c)
+				repo.<#=code.Escape(entity)#>.Add(entity)
+				repo.Commit()
+
+				repo.<#=code.Escape(entity)#>.DeleteById(<#=GetKeyParamCode(code, ef, entity)#>)
+				repo.Commit()
+
+				target = repo.<#=code.Escape(entity)#>.List().Count()
+			End Using
+
+			Assert.AreEqual(Of Integer)(expected, target)
+		End Sub
+
+		#End Region
+<#+
+	Next
+#>
+	End Class
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

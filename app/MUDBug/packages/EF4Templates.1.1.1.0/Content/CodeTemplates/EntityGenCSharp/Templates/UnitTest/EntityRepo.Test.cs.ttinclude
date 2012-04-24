@@ -1,0 +1,336 @@
+﻿<#+
+// <copyright file="EntityRepo.Test.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class EntityRepoTestCs : Template
+{
+
+	private string FixCase(string text) {
+		string r = "";
+		if (!string.IsNullOrEmpty(text)) {
+			r = text.Substring(0, 1).ToLowerInvariant();
+			r += text.Substring(1);
+			return r;
+		}
+		return string.Empty;
+	}
+
+	private string GetIdKey(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += ", " + code.Escape(edmProperty.TypeUsage) + " " + FixCase(code.Escape(edmProperty));
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.StartsWith(", ")) { idKey = idKey.Substring(2); } }
+		return idKey;
+	}
+
+	private string GetIdKeyParams(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += ", " + FixCase(code.Escape(edmProperty));
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.StartsWith(", ")) { idKey = idKey.Substring(2); } }
+		return idKey;
+	}
+	
+	private string GetIdKeyXmlDoc(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+        string s = @"/// <param name=""{0}"">{1} (primary key field)</param>";
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += string.Format(s, FixCase(code.Escape(edmProperty)), EfUtils.ParseCamelToProper(code.Escape(edmProperty))) + System.Environment.NewLine;
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.EndsWith(System.Environment.NewLine)) { idKey = idKey.Substring(0, (idKey.Length - System.Environment.NewLine.Length)); } }
+		return idKey;
+	}
+	
+	private string GetIdKeyLinq(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += "g." + code.Escape(edmProperty) + " == " + FixCase(code.Escape(edmProperty)) + " && ";
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.EndsWith(" && ")) { idKey = idKey.Substring(0, idKey.Length -4).Trim(); } }
+		return idKey;
+	}
+	
+	public string GetKeyPropName(EntityType entity, MetadataTools ef, CodeGenerationTools code) {
+		string RetVal = string.Empty;
+		 
+		foreach (EdmProperty edmProperty in entity.Properties.Where(p => p.TypeUsage.EdmType is PrimitiveType && p.DeclaringType == entity))
+		{
+			if (ef.IsKey(edmProperty)) {
+				RetVal = code.Escape(edmProperty);
+				break;
+			}
+		}		
+		return RetVal;
+	}
+	
+	public string GetSampleData(CodeGenerationTools code, MetadataTools ef, string fieldName, string fieldType, EdmProperty prop) {
+		string idKey = string.Empty;
+		if (fieldType.ToLowerInvariant() == "string") {
+			int MaxLen = EfUtils.GetPropertyLength(code, prop);
+			if (MaxLen > 100) { MaxLen = 100; }
+			for (int i = 0; i < MaxLen; i++)
+			{
+				Random rnd = new Random();
+				int r = rnd.Next(1, 26);
+				idKey += "A";
+			}
+			return GetQuotes() + idKey + GetQuotes();
+		}
+		if (fieldType.ToLowerInvariant().Contains("bool")) {
+			return "true";
+		}
+		if (fieldType.ToLowerInvariant().Contains("datetime")) {
+			return "DateTime.Now";
+		}
+		if (fieldType.ToLowerInvariant().Contains("date")) {
+			return "DateTime.Now";
+		}
+		if (fieldType.ToLowerInvariant() == "guid") {
+			return "Guid.NewGuid()";
+		}
+		return "1";
+	}
+	
+	public string GetQuotes() {
+		return @"""";
+	}
+	
+	public string GetKeyCreationCode(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where(p => p.TypeUsage.EdmType is PrimitiveType && p.DeclaringType == table))
+		{
+				idKey += @"entity." + code.Escape(edmProperty) + " = " + 
+					GetSampleData(code, ef, code.Escape(edmProperty), code.Escape(edmProperty.TypeUsage), edmProperty) + 
+					";" + " // " + code.Escape(edmProperty.TypeUsage) + System.Environment.NewLine;
+		}	
+		return idKey;
+	}
+	
+	public string GetKeyParamCode(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where(p => p.TypeUsage.EdmType is PrimitiveType && p.DeclaringType == table))
+		{
+			if (ef.IsKey(edmProperty)) {
+				idKey += "entity." + code.Escape(edmProperty) + ", ";
+			}
+		}
+
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.EndsWith(", ")) { idKey = idKey.Substring(0, idKey.Length -2).Trim(); } }
+		return idKey;
+	}
+	
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+		
+#>
+<#=EfUtils.WriteHeader(new string[] {"System", "System.Collections", 
+	"System.Collections.Generic", "System.Linq", 
+	"Microsoft.VisualStudio.TestTools.UnitTesting", 
+	EntityGenerator.NamespaceName})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+
+    /// <summary>
+    /// This is a test class for EntityRepoTest and is intended
+    /// to contain all EntityRepoTest Unit Tests
+    ///</summary>
+    [TestClass()]
+    public class EntityRepoTest
+    {
+
+        /// <summary>
+        /// A test for EntityRepo Constructor
+        ///</summary>
+        [TestMethod()]
+        public void EntityRepo_Constructor_ShouldNotBeNull()
+        {
+            EntityRepo target = null;
+            using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+            {
+
+                target = new EntityRepo(c);
+            }
+
+            Assert.IsNotNull(target);
+        }
+<#+ 
+		foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>().OrderBy(e => e.Name)) {
+			var entity = entitySet.ElementType;
+#>
+    
+    #region <#=code.Escape(entity.Name + "Repo")#>
+	
+        /// <summary>
+        /// Test for whether the EntityRepo.<#=code.Escape(entity.Name)#> is null
+        ///</summary>
+        [TestMethod()]
+        public void <#=code.Escape(entity.Name + "Repo")#>_RepoProperty_ShouldNotBeNull()
+        {
+            EntityRepo target = null;
+            using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+            {
+
+                target = new EntityRepo(c);
+            }
+
+            Assert.IsNotNull(target.<#=code.Escape(entity)#>);
+        }
+
+        /// <summary>
+        /// Test for whether the <#=code.Escape(entity.Name)#> constructor returns null
+        ///</summary>
+        [TestMethod()]
+        public void <#=code.Escape(entity)#>_Constructor_ShouldNotBeNull()
+        {
+            <#=code.Escape(entity)#> target = new <#=code.Escape(entity)#>();
+            Assert.IsNotNull(target);
+        }
+
+        /// <summary>
+        /// Test for whether the <#=code.Escape(entity.Name)#> Add method returns one
+        ///</summary>
+        [TestMethod()]
+        public void <#=code.Escape(entity.Name + "Repo")#>_Add_CountShouldBeOne()
+        {
+            int actual = 0;
+            int expected = 1;
+            EntityRepo repo = null;
+            using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+            {
+                repo = new EntityRepo(c);
+                <#=code.Escape(entity)#> target = new <#=code.Escape(entity)#>();
+                repo.<#=code.Escape(entity)#>.Add(target);
+                actual = repo.Commit();
+                string errors = repo.<#=code.Escape(entity)#>.ValidationErrors;
+            }
+
+            Assert.AreEqual<int>(expected, actual);
+        }
+
+        /// <summary>
+        /// Test for whether the <#=code.Escape(entity.Name)#> Delete method returns zero
+        ///</summary>
+        [TestMethod()]
+        public void <#=code.Escape(entity.Name + "Repo")#>_Delete_CountShouldBeZero()
+        {
+            int actual = 0;
+            int expected = 0;
+            EntityRepo repo = null;
+            using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+            {
+                repo = new EntityRepo(c);
+                <#=code.Escape(entity)#> target = new <#=code.Escape(entity)#>();
+                repo.<#=code.Escape(entity)#>.Add(target);
+
+                repo.<#=code.Escape(entity)#>.Delete(target);
+                actual = repo.<#=code.Escape(entity)#>.List().Count();
+            }
+
+            Assert.AreEqual<int>(expected, actual);
+        }
+
+        /// <summary>
+        /// Test for whether the <#=code.Escape(entity.Name)#> Update method returns one
+        ///</summary>
+        [TestMethod()]
+        public void <#=code.Escape(entity.Name + "Repo")#>_Update_CountShouldBeOne()
+        {
+            int actual = 0;
+            int expected = 1;
+            EntityRepo repo = null;
+            using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+            {
+                repo = new EntityRepo(c);
+                <#=code.Escape(entity)#> target = new <#=code.Escape(entity)#>();
+				repo.<#=code.Escape(entity)#>.Add(target);
+
+                repo.<#=code.Escape(entity)#>.Update(target);
+                actual = repo.<#=code.Escape(entity)#>.List().Count();
+            }
+
+            Assert.AreEqual<int>(expected, actual);
+        }
+	
+        /// <summary>
+        /// Test for whether the <#=code.Escape(entity.Name)#> GetById returns null
+        ///</summary>
+        [TestMethod()]
+		public void <#=code.Escape(entity.Name + "Repo")#>_GetById_ShouldNotBeNull() {
+			
+			<#=code.Escape(entity)#> target = null;
+
+			<#=code.Escape(entity)#> entity = new <#=code.Escape(entity)#>();
+			<#=GetKeyCreationCode(code, ef, entity)#>
+			EntityRepo repo = null;
+			using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+			{
+				repo = new EntityRepo(c);
+				repo.<#=code.Escape(entity)#>.Add(entity);
+				repo.Commit();
+
+				target = repo.<#=code.Escape(entity)#>.GetById(<#=GetKeyParamCode(code, ef, entity)#>);
+			}
+
+			Assert.IsNotNull(target);
+		}
+	
+        /// <summary>
+        /// Test for whether the <#=code.Escape(entity.Name)#> DeleteById method returns zero
+        ///</summary>
+        [TestMethod()]
+		public void <#=code.Escape(entity.Name + "Repo")#>_DeleteById_CountShouldBeZero() {
+			int expected = 0;
+			int target = 0;
+			<#=code.Escape(entity)#> entity = new <#=code.Escape(entity)#>();
+			<#=GetKeyCreationCode(code, ef, entity)#>
+			EntityRepo repo = null;
+			using (<#=code.Escape("Fake" + container.Name)#> c = new <#=code.Escape("Fake" + container.Name)#>())
+			{
+				repo = new EntityRepo(c);
+				repo.<#=code.Escape(entity)#>.Add(entity);
+				repo.Commit();
+
+				repo.<#=code.Escape(entity)#>.DeleteById(<#=GetKeyParamCode(code, ef, entity)#>);
+				repo.Commit();
+
+				target = repo.<#=code.Escape(entity)#>.List().Count();
+			}
+
+			Assert.AreEqual<int>(expected, target);
+		}
+
+	#endregion
+
+
+<#+ 
+			}
+#>
+    }
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

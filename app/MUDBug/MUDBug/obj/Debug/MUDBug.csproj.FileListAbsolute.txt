@@ -1,0 +1,7 @@
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\bin\MUDBug.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\bin\MUDBug.pdb
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\bin\EntityFramework.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\bin\EntityFramework.xml
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\obj\Debug\MUDBug.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug\obj\Debug\MUDBug.pdb

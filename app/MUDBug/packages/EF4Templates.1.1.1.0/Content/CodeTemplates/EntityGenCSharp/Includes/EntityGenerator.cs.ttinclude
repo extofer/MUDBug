@@ -1,0 +1,153 @@
+﻿<#+
+// <copyright file="EntityGenerator.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class EntityGenerator : Generator
+{
+	public EntityGenerator() {
+		//EntityGenerator.Language = DefLanguage.CSharp;
+		//EntityGenerator.Technology = DefTechnology.WPF;
+		//EntityGenerator.GenerateODataService = false;
+		//EntityGenerator.GenerateRepository = false;
+		//EntityGenerator.GenerateValidation = false;
+	}
+
+	// Properties
+	public static DefLanguage Language { get; set; }
+	public static DefTechnology Technology { get; set; }
+	public static bool ExcludeFromCodeCoverage { get; set; }
+	
+	public static string EdmxFile { get; set; }
+	public static string NamespaceName { get; set; }
+	public static EdmItemCollection ItemCollection { get; set; }
+	public static StoreItemCollection StoreItemCollection { get; set; }
+	public static string EntityContainerName { get; set; }
+	public static MetadataWorkspace MetadataWorkspace { get; set; }
+	
+	public static bool GenerateODataService { get; set; }
+	public static bool GenerateRepository { get; set; }
+	public static bool GenerateUnitTests { get; set; }
+	public static bool GenerateValidation { get; set; }
+		
+	/// <summary>
+	/// Generates output.
+	/// </summary>
+	protected override void RunCore()
+	{
+		string folder = EntityGenerator.TemplatePath;
+		folder = System.IO.Path.Combine(folder, "Generated");
+		folder = System.IO.Path.Combine(folder, "EntityGenCs");
+		
+		// Emit self-tracking entities
+		string selfTrackFolder = System.IO.Path.Combine(folder, "Self-Tracking Entities");
+
+		IContextCs icontextCs = new IContextCs();
+		icontextCs.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "IContext.cs"));
+
+		ContextCs contextCs = new ContextCs();
+		contextCs.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "Context.cs"));
+		
+		ContextExtensionsCs contextExtCs = new ContextExtensionsCs();
+		contextExtCs.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "Context.Extensions.cs"));
+		
+		FakeContextCs fakeContextCs = new FakeContextCs();
+		fakeContextCs.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "FakeContext.cs"));
+
+		ModelCs modelCs = new ModelCs();
+		modelCs.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "Model.cs"));
+	
+		// Emit Repository
+		if (EntityGenerator.GenerateRepository)
+		{
+			string repoFolder = System.IO.Path.Combine(folder, "Repository");
+			RepoCs repoCs = new RepoCs();
+			repoCs.RenderToFile(System.IO.Path.Combine(repoFolder, "Repo.cs"));
+
+		}
+
+		// Emit Validation
+		if (EntityGenerator.GenerateValidation)
+		{
+			string validFolder = System.IO.Path.Combine(folder, "Validation");
+			ValidationCs validationCs = new ValidationCs();
+			validationCs.RenderToFile(System.IO.Path.Combine(validFolder, "Validation.cs"));
+
+		}
+		
+		// Emit OData Service
+		if (EntityGenerator.GenerateODataService)
+		{
+			string serviceFolder = System.IO.Path.Combine(folder, "OData");
+
+			DataServiceSvc dataServiceSvc = new DataServiceSvc();
+			dataServiceSvc.RenderToFile(System.IO.Path.Combine(serviceFolder, EntityContainerName + ".svc"));
+
+			DataServiceSvcCs dataServiceSvcCs = new DataServiceSvcCs();
+			dataServiceSvcCs.RenderToFile(System.IO.Path.Combine(serviceFolder, EntityContainerName + ".svc." +  EntityGenerator.LanguageFileString()));
+
+		}
+		
+		// Emit Unit Tests
+		if (EntityGenerator.GenerateUnitTests) 
+		{
+			string testFolder = System.IO.Path.Combine(folder, "Unit-Tests");
+			
+			FakeObjectSetTestCs fakeObjectSetTestCs = new FakeObjectSetTestCs();
+			fakeObjectSetTestCs.RenderToFile(System.IO.Path.Combine(testFolder, "FakeObjectset.Tests." + EntityGenerator.LanguageFileString()));
+
+			FakeEntitiesTestCs fakeEntitiesTestCs = new FakeEntitiesTestCs();
+			fakeEntitiesTestCs.RenderToFile(System.IO.Path.Combine(testFolder, "FakeEntities.Tests." + EntityGenerator.LanguageFileString()));
+			
+			EntityRepoTestCs entityRepoTestCs = new EntityRepoTestCs();
+			entityRepoTestCs.RenderToFile(System.IO.Path.Combine(testFolder, "EntityRepo.Tests." + EntityGenerator.LanguageFileString()));
+			
+		}
+	}
+
+	/// <summary>
+	/// Validates code generation parameters.
+	/// </summary>
+	protected override void Validate()
+	{
+	}
+	
+	// The template path (to the project)
+	public static string TemplatePath {
+		get { return System.IO.Path.GetDirectoryName(System.IO.Path.GetDirectoryName(System.IO.Path.GetDirectoryName(TransformationContext.Host.TemplateFile))); }
+	}
+
+	public static string LanguageString()
+	{
+		string tmp = EntityGenerator.Language.ToString().ToUpperInvariant();
+		if (tmp == "CSHARP")
+			tmp = "C#";
+		if (tmp == "VB")
+			tmp = "vb";
+		return tmp;
+	}
+
+	public static string LanguageFileString()
+	{
+		string tmp = EntityGenerator.Language.ToString().ToUpperInvariant();
+		if (tmp == "CSHARP")
+			tmp = "cs";
+		if (tmp == "VB")
+			tmp = "vb";
+		return tmp;
+	}
+}
+
+public enum DefLanguage : int
+{
+	VB = 0,
+	CSharp = 1
+}
+
+public enum DefTechnology : int
+{
+	SilverlightRIA = 0,
+	ASPNET = 1,
+	WPF = 2
+}
+#>

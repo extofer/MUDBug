@@ -1,0 +1,244 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+ 
+' <copyright file="EntityService.asmx.ttinclude" company="ActiveAsp Software">
+'  Copyright © 2010 ActiveAsp Software. All Rights Reserved.
+' </copyright>
+
+Public Class DataServiceSvcVb
+	Inherits Template
+
+	Private Function GetNamespace() as String
+		If Not String.IsNullOrEmpty(EntityGenerator.NamespaceName) Then
+			return EntityGenerator.NamespaceName + "."
+		Else
+			return ""
+		End If
+	End Function
+	
+	''' <summary>
+	''' Generates output.
+	''' </summary>
+	Public Overrides Function TransformText() As String
+		Dim code As New CodeGenerationTools(Me)
+		Dim region As New CodeRegion(Me)
+
+#>
+<#=EfUtils.WriteHeader()#>
+Imports System.Data.Services
+Imports System.Data.Services.Common
+Imports System.Linq
+Imports System.Linq.Expressions
+Imports System.ServiceModel.Web
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+	PushIndent(CodeRegion.GetIndent(1))
+#>
+
+''' <summary>
+''' OData WCF Data Service for entities
+''' <para>When generating an OData web service, you need the following in your web.config</para>
+''' <example>
+''' <code>
+''' &lt;system.serviceModel&gt;
+''' &lt;serviceHostingEnvironment aspNetCompatibilityEnabled="true" /&gt;
+''' &lt;/system.serviceModel&gt;
+''' </code>
+''' </example>
+''' <para>
+''' You also need the following references:
+''' <list type="table">
+''' <item>System.Configuration</item>
+''' <item>System.Data.Services</item> 
+''' <item>System.Data.Services.Client</item> 
+''' <item>System.ServiceModel</item>
+''' <item>System.ServiceModel.Web</item>
+''' </list>
+''' </para>
+''' </summary>
+''' <remarks>
+''' If you get the error <c>"The type 'xxxDataService', provided as the Service 
+''' attribute value in the ServiceHost directive, 
+''' or provided in the configuration element system.serviceModel/serviceHostingEnvironment/serviceActivations 
+''' could not be found."</c> You have to open the .svc file with the "Source 
+''' Code (Text) Editor" and add the project namespace in the Service attribute:
+''' 
+''' <c>Service="MyEntitiesDataService"</c> change to <c>Service="MyWebApp.MyEntitiesDataService".</c>
+''' </remarks>
+Public Class <#=code.Escape(EntityGenerator.EntityContainerName + "DataService")#>
+    Inherits DataService(Of <#=EntityGenerator.EntityContainerName#>)
+
+    Public AdministratorsGroup As String = "Admin"
+
+    Public CanViewWithoutAuthentication As Boolean = False
+    Public CanOnlyEditWithAdministratorsGroupAccess As Boolean = True
+
+    ''' <summary>
+    ''' This method is called only once to initialize service-wide policies.
+    ''' </summary>
+    ''' <param name="config"></param>
+    ''' <remarks></remarks>
+    Public Shared Sub InitializeService(ByVal config As DataServiceConfiguration)
+        Dim pageSize As Integer = 25
+		
+        Dim Rights As EntitySetRights = EntitySetRights.All
+		
+        ' TODO: set rules to indicate which entity sets and service operations are visible, updatable, etc.
+<#+
+For Each loopEntity As EntityType In EntityGenerator.ItemCollection.GetItems(Of EntityType)().OrderBy(Function(e) e.Name)
+    Dim entity As EntityType = loopEntity
+#>
+        config.SetEntitySetAccessRule("<#=code.Escape(entity.Name)#>", Rights)
+        config.SetEntitySetPageSize("<#=code.Escape(entity.Name)#>", pageSize)
+		
+<#+
+Next
+#>
+        config.DataServiceBehavior.MaxProtocolVersion = DataServiceProtocolVersion.V2
+    End Sub
+
+<#+
+For Each loopEntity As EntityType In EntityGenerator.ItemCollection.GetItems(Of EntityType)().OrderBy(Function(e) e.Name)
+    Dim entity As EntityType = loopEntity
+#>
+    ''' <summary>
+    ''' Filter that is called on querying the data in the <#=code.Escape(entity.Name)#> table
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks>This will not allow browsing if not authenticated</remarks>
+	<QueryInterceptor("<#=code.Escape(entity.Name)#>")> _
+	Public Function <#=code.Escape(entity.Name)#>Filter() As Expression(Of Func(Of <#=code.Escape(entity.Name)#>, Boolean))
+		Dim IsAuthenticated as Boolean = HttpContext.Current.User.Identity.IsAuthenticated
+
+        If Not IsAuthenticated Then
+			If Not CanViewWithoutAuthentication Then Throw New DataServiceException(403, "Access Denied") ' Return Function(o As <#=code.Escape(entity.Name)#>) False
+        End If
+		
+		Return Function(o As <#=code.Escape(entity.Name)#>) True
+	End Function
+
+    ''' <summary>
+    ''' Sub that is called before adding changed data to the <#=code.Escape(entity.Name)#> table
+    ''' </summary>
+    ''' <param name="o"></param>
+    ''' <param name="operations"></param>
+    ''' <remarks>This will not allow changes if not authenticated</remarks>
+    <ChangeInterceptor("<#=code.Escape(entity.Name)#>")> _
+    Public Sub OnChange<#=code.Escape(entity.Name)#>(ByVal o As <#=code.Escape(entity.Name)#>, ByVal operations As UpdateOperations)
+        Dim IsAuthenticated As Boolean = HttpContext.Current.User.Identity.IsAuthenticated
+
+        If Not IsAuthenticated Then
+            Throw New DataServiceException(403, "Access Denied")
+        End If
+	
+        If CanOnlyEditWithAdministratorsGroupAccess Then
+            If Not HttpContext.Current.User.IsInRole(AdministratorsGroup) Then
+                Throw New DataServiceException(403, "Access Denied")
+            End If
+        End If
+    End Sub
+
+<#+
+Next
+#>
+    ' Put the following code in your web.config afer </system.web> 
+    ' to enable forms authentication through JSON
+    '
+    '  <system.web.extensions>
+    '    <scripting>
+    '      <webServices>
+    '        <authenticationService enabled="true" requireSSL="false"/>
+    '      </webServices>
+    '    </scripting>
+    '  </system.web.extensions>
+
+    ' Client access policy example (ClientAccessPolicy.xml):
+	'
+    '  <?xml version="1.0" encoding="utf-8" ?>
+    '  <access-policy>
+    '    <cross-domain-access>
+    '      <policy>
+    '        <allow-from http-request-headers="*">
+    '          <domain uri="*" />
+    '        </allow-from>
+    '        <grant-to>
+    '          <resource path="/" include-subpaths="true" />
+    '        </grant-to>
+    '      </policy>
+    '    </cross-domain-access>
+    '  </access-policy>
+
+	' Interesting stuff for edmx published as an odata feed, and exposing fields as title/summary
+	
+	' Namespace (Add to <edmx:Edmx> element): xmlns:m2="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+	' Title: m2:FC_TargetPath="SyndicationTitle" m2:FC_ContentKind="text" m2:FC_KeepInContent="false"
+	' Summary: m2:FC_TargetPath="SyndicationSummary" m2:FC_ContentKind="html" m2:FC_KeepInContent="false"
+
+	' Client example:
+	'
+	'Imports System.Data.Services.Client
+	'Imports System.Net
+	'Imports System.Security
+	'
+	'Dim baseUri As String = "http://localhost:64422/"
+    'Dim serviceUri As String = baseUri + "Generated/CmsAppEntitiesData.svc"
+    'Dim authUri As String = baseUri + "Authentication_JSON_AppService.axd/Login"
+
+    'Sub Main()
+
+    '    Dim context = New CmsAppService.CmsAppEntities(New Uri(serviceUri))
+    '    AddHandler context.SendingRequest, AddressOf context_sendingRequest
+
+    '    For Each result In context.ArticleType
+    '        Console.WriteLine(result.ArticleTypeText)
+    '    Next
+    '    Console.WriteLine("...")
+    '    Console.ReadKey()
+    'End Sub
+
+    'Public Sub context_sendingRequest(ByVal sender As Object, ByVal e As SendingRequestEventArgs)
+    '    e.RequestHeaders.Add("Cookie", GetCookie("Rick", "option"))
+    'End Sub
+
+    'Private _cookie As String = String.Empty
+
+    'Private Function GetCookie(ByVal userName As String, ByVal password As String) As String
+    '    If String.IsNullOrEmpty(_cookie) Then
+    '        Dim request As System.Net.WebRequest = HttpWebRequest.Create(authUri)
+
+    '        request.Method = "POST"
+    '        request.ContentType = "application/json"
+
+    '        Dim authBody As String = String.Format("{{ ""userName"": ""{0}"", ""password"": ""{1}"", ""createPersistentCookie"":false}}",
+    '            userName,
+    '            password)
+    '        request.ContentLength = authBody.Length
+
+    '        Using w As New System.IO.StreamWriter(request.GetRequestStream())
+    '            w.Write(authBody)
+    '            w.Close()
+    '        End Using
+    '        Dim res As WebResponse = request.GetResponse()
+    '        If Not String.IsNullOrEmpty(res.Headers("Set-Cookie")) Then
+    '            _cookie = res.Headers("Set-Cookie")
+    '        Else
+    '            Throw New SecurityException("Invalid username and password")
+    '        End If
+
+    '    End If
+    '    Return _cookie
+    'End Function
+	
+End Class
+<#+
+	PopIndent()
+#>
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+
+End Class
+#>
+

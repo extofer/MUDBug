@@ -1,0 +1,232 @@
+﻿<#+
+// <copyright file="Blank.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class DataServiceSvcCs : Template
+{
+
+	private string GetNamespace()
+	{   if (!string.IsNullOrEmpty(EntityGenerator.NamespaceName)) {
+			return EntityGenerator.NamespaceName + ".";
+		} else { return ""; } }
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+#>
+<#=EfUtils.WriteHeader(new string[] {"System", "System.Data.Services", "System.Data.Services.Common", "System.Linq", "System.Linq.Expressions", "System.ServiceModel.Web", "System.Web"})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+/// <summary>
+/// OData WCF Data Service for entities
+/// <para>When generating an OData web service, you need the following in your web.config</para>
+/// <example>
+/// <code>
+/// &lt;system.serviceModel&gt;
+/// &lt;serviceHostingEnvironment aspNetCompatibilityEnabled="true" /&gt;
+/// &lt;/system.serviceModel&gt;
+/// </code>
+/// </example>
+/// <para>
+/// You also need the following references:
+/// <list type="table">
+/// <item>System.Configuration</item>
+/// <item>System.Data.Services</item> 
+/// <item>System.Data.Services.Client</item> 
+/// <item>System.ServiceModel</item>
+/// <item>System.ServiceModel.Web</item>
+/// </list>
+/// </para>
+/// </summary>
+/// <remarks>
+/// If you get the error <c>"The type 'xxxDataService', provided as the Service 
+/// attribute value in the ServiceHost directive, 
+/// or provided in the configuration element system.serviceModel/serviceHostingEnvironment/serviceActivations 
+/// could not be found."</c> You have to open the .svc file with the "Source 
+/// Code (Text) Editor" and add the project namespace in the Service attribute:
+/// 
+/// <c>Service="MyEntitiesDataService"</c> change to <c>Service="MyWebApp.MyEntitiesDataService".</c>
+/// </remarks>
+public class <#=code.Escape(EntityGenerator.EntityContainerName + "DataService")#> : DataService<<#=EntityGenerator.EntityContainerName#>>
+{
+
+	public string AdministratorsGroup = "Admin";
+	public bool CanViewWithoutAuthentication = false;
+	public bool CanOnlyEditWithAdministratorsGroupAccess = true;
+
+	/// <summary>
+	/// This method is called only once to initialize service-wide policies.
+	/// </summary>
+	/// <param name="config"></param>
+	/// <remarks></remarks>
+	public static void InitializeService(DataServiceConfiguration config)
+	{
+		int pageSize = 25;
+
+		EntitySetRights Rights = EntitySetRights.All;
+
+		// TODO: set rules to indicate which entity sets and service operations are visible, updatable, etc.
+
+<#+
+foreach (EntityType entity in EntityGenerator.ItemCollection.GetItems<EntityType>().OrderBy(e => e.Name))
+{
+#>
+		config.SetEntitySetAccessRule("<#=entity.Name#>", Rights);
+		config.SetEntitySetPageSize("<#=entity.Name#>", pageSize);
+<#+
+}
+#>
+		config.DataServiceBehavior.MaxProtocolVersion = DataServiceProtocolVersion.V2;
+	}
+<#+
+foreach (EntityType entity in EntityGenerator.ItemCollection.GetItems<EntityType>().OrderBy(e => e.Name))
+{
+#>
+
+	/// <summary>
+	/// Filter that is called on querying the data in the <#=entity.Name#> table
+	/// </summary>
+	/// <returns></returns>
+	/// <remarks>This will not allow browsing if not authenticated</remarks>
+	[QueryInterceptor("<#=entity.Name#>")]
+	public Expression<Func<<#=entity.Name#>, bool>> <#=entity.Name#>Filter()
+	{
+		bool IsAuthenticated = HttpContext.Current.User.Identity.IsAuthenticated;
+
+		if (!IsAuthenticated) {
+			if (!CanViewWithoutAuthentication)
+				throw new DataServiceException(403, "Access Denied");
+			// Return Function(o As <#=code.Escape(entity.Name)#>) False
+		}
+
+		return (<#=entity.Name#> o) => true;
+	}
+	
+	/// <summary>
+	/// Sub that is called before adding changed data to the <#=entity.Name#> table
+	/// </summary>
+	/// <param name="o"></param>
+	/// <param name="operations"></param>
+	/// <remarks>This will not allow changes if not authenticated</remarks>
+	[ChangeInterceptor("<#=entity.Name#>")]
+	public void OnChangeArticle(<#=entity.Name#> o, UpdateOperations operations)
+	{
+		bool IsAuthenticated = HttpContext.Current.User.Identity.IsAuthenticated;
+
+		if (!IsAuthenticated) {
+			throw new DataServiceException(403, "Access Denied");
+		}
+
+		if (CanOnlyEditWithAdministratorsGroupAccess) {
+			if (!HttpContext.Current.User.IsInRole(AdministratorsGroup)) {
+				throw new DataServiceException(403, "Access Denied");
+			}
+		}
+	}
+
+<#+
+}
+#>
+
+	// Put the following code in your web.config afer </system.web> 
+	// to enable forms authentication through JSON
+	//
+	//  <system.web.extensions>
+	//    <scripting>
+	//      <webServices>
+	//        <authenticationService enabled="true" requireSSL="false"/>
+	//      </webServices>
+	//    </scripting>
+	//  </system.web.extensions>
+
+	// Client access policy example (ClientAccessPolicy.xml):
+	//
+	//  <?xml version="1.0" encoding="utf-8" ?>
+	//  <access-policy>
+	//    <cross-domain-access>
+	//      <policy>
+	//        <allow-from http-request-headers="*">
+	//          <domain uri="*" />
+	//        </allow-from>
+	//        <grant-to>
+	//          <resource path="/" include-subpaths="true" />
+	//        </grant-to>
+	//      </policy>
+	//    </cross-domain-access>
+	//  </access-policy>
+
+	// Interesting stuff for edmx published as an odata feed, and exposing fields as title/summary
+
+	// Namespace (Add to <edmx:Edmx> element): xmlns:m2="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+	// Title: m2:FC_TargetPath="SyndicationTitle" m2:FC_ContentKind="text" m2:FC_KeepInContent="false"
+	// Summary: m2:FC_TargetPath="SyndicationSummary" m2:FC_ContentKind="html" m2:FC_KeepInContent="false"
+
+	// Client example:
+	//
+	//Imports System.Data.Services.Client
+	//Imports System.Net
+	//Imports System.Security
+	//
+	//Dim baseUri As String = "http://localhost:64422/"
+	//Dim serviceUri As String = baseUri + "Generated/CmsAppEntitiesData.svc"
+	//Dim authUri As String = baseUri + "Authentication_JSON_AppService.axd/Login"
+
+	//Sub Main()
+
+	//    Dim context = New CmsAppService.CmsAppEntities(New Uri(serviceUri))
+	//    AddHandler context.SendingRequest, AddressOf context_sendingRequest
+
+	//    For Each result In context.ArticleType
+	//        Console.WriteLine(result.ArticleTypeText)
+	//    Next
+	//    Console.WriteLine("...")
+	//    Console.ReadKey()
+	//End Sub
+
+	//Public Sub context_sendingRequest(ByVal sender As Object, ByVal e As SendingRequestEventArgs)
+	//    e.RequestHeaders.Add("Cookie", GetCookie("Rick", "option"))
+	//End Sub
+
+	//Private _cookie As String = String.Empty
+
+	//Private Function GetCookie(ByVal userName As String, ByVal password As String) As String
+	//    If String.IsNullOrEmpty(_cookie) Then
+	//        Dim request As System.Net.WebRequest = HttpWebRequest.Create(authUri)
+
+	//        request.Method = "POST"
+	//        request.ContentType = "application/json"
+
+	//        Dim authBody As String = String.Format("{{ ""userName"": ""{0}"", ""password"": ""{1}"", ""createPersistentCookie"":false}}",
+	//            userName,
+	//            password)
+	//        request.ContentLength = authBody.Length
+
+	//        Using w As New System.IO.StreamWriter(request.GetRequestStream())
+	//            w.Write(authBody)
+	//            w.Close()
+	//        End Using
+	//        Dim res As WebResponse = request.GetResponse()
+	//        If Not String.IsNullOrEmpty(res.Headers("Set-Cookie")) Then
+	//            _cookie = res.Headers("Set-Cookie")
+	//        Else
+	//            Throw New SecurityException("Invalid username and password")
+	//        End If
+
+	//    End If
+	//    Return _cookie
+	//End Function
+	
+	}
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

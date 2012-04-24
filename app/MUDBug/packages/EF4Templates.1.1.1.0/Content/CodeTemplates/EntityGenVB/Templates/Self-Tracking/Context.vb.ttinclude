@@ -1,0 +1,173 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="Template.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class ContextVb
+	Inherits Template
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+
+		Dim namespaceName As String = EntityGenerator.NamespaceName
+
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "' No EntityContainer exists in the model, so no code was generated"
+		End If
+
+#>
+<#=EfUtils.WriteContextHeader()#>
+Imports System.Data.EntityClient
+Imports System.Data.Objects
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+''' <summary>
+''' Main entity context
+''' </summary>
+<#=EfUtils.ReturnExcludeFromCodeCoverageString()#>Partial <#=Accessibility.ForType(container)#> Class <#=code.Escape(container)#>
+    Inherits ObjectContext
+	Implements IContext
+	
+    ''' <summary>Connection String</summary>
+    Public Const SettingsConnectionString As String = "name=<#=container.Name#>"
+	''' <summary>Container name</summary>
+    Public Const ContainerName As String = "<#=container.Name#>"
+
+<#+
+region.Begin("Constructors")
+#>
+
+    ''' <summary>
+    ''' Constructor for the entity class
+    ''' </summary>
+    Public Sub New()
+        MyBase.New(SettingsConnectionString, ContainerName)
+        Initialize()
+    End Sub
+
+    ''' <summary>
+    ''' Constructor for the entity class
+    ''' </summary>
+    ''' <param name="connectionString">Connection string</param>
+    Public Sub New(ByVal connectionString As String)
+        MyBase.New(connectionString, ContainerName)
+        Initialize()
+    End Sub
+
+    ''' <summary>
+    ''' Constructor for the entity class
+    ''' </summary>
+    ''' <param name="connection">Connection</param>
+    Public Sub New(ByVal connection As EntityConnection)
+        MyBase.New(connection, ContainerName)
+        Initialize()
+    End Sub
+
+    Private Sub Initialize()
+        ' Creating proxies requires the use of the ProxyDataContractResolver and
+        ' may allow lazy loading which can expand the loaded graph during serialization.
+        ContextOptions.ProxyCreationEnabled = False
+        AddHandler ObjectMaterialized, AddressOf HandleObjectMaterialized
+    End Sub
+
+    Private Sub HandleObjectMaterialized(ByVal sender As Object, ByVal e As ObjectMaterializedEventArgs)
+        Dim entity As IObjectWithChangeTracker = TryCast(e.Entity, IObjectWithChangeTracker)
+        If entity IsNot Nothing Then
+            Dim changeTrackingEnabled As Boolean = entity.ChangeTracker.ChangeTrackingEnabled
+            Try
+                entity.MarkAsUnchanged()
+            Finally
+                entity.ChangeTracker.ChangeTrackingEnabled = changeTrackingEnabled
+            End Try
+            Me.StoreReferenceKeyValues(entity)
+        End If
+    End Sub
+<#+
+region.End()
+#>
+
+<#+
+region.Begin("ObjectSet Properties")
+
+    For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)()
+#>
+
+	''' <summary>
+	''' Object set for <#=code.Escape(entitySet)#> model
+	''' </summary>
+    <#=Accessibility.ForReadOnlyProperty(entitySet)#> ReadOnly Property <#=code.Escape(entitySet)#>() As IObjectSet(Of <#=code.Escape(entitySet.ElementType)#>) Implements IContext.<#=code.Escape(entitySet)#>
+        Get
+            If <#=code.FieldName(entitySet) #> Is Nothing Then
+                <#=code.FieldName(entitySet)#> = CreateObjectSet(Of <#=code.Escape(entitySet.ElementType)#>)("<#=entitySet.Name#>")
+            End If
+            Return <#=code.FieldName(entitySet)#>
+        End Get
+    End Property
+    Private <#=code.FieldName(entitySet)#> As IObjectSet(Of <#=code.Escape(entitySet.ElementType)#>)
+<#+
+    Next
+
+region.End()
+#>
+
+<#+
+region.Begin("Function Imports")
+
+    For Each edmFunction As EdmFunction In container.FunctionImports
+        Dim parameters As IEnumerable(Of FunctionImportParameter)  = FunctionImportParameter.Create(edmFunction.Parameters, code, ef)
+        Dim paramList As String = String.Join(", ", parameters.Select(Function(p) "ByVal " & p.FunctionParameterName & " As " & p.FunctionParameterType).ToArray())
+        If edmFunction.ReturnParameter Is Nothing Then
+            Continue For
+        End If
+        Dim returnTypeElement As String = code.Escape(ef.GetElementType(edmFunction.ReturnParameter.TypeUsage))
+#>
+	''' <summary>
+	''' Object set for <#=code.Escape(returnTypeElement)#> model
+	''' </summary>
+	''' <returns>ObjectResult of type <#=returnTypeElement#></returns>
+    <#=Accessibility.ForMethod(edmFunction)#> Function <#=code.Escape(edmFunction)#>(<#=paramList#>) As ObjectResult(Of <#=returnTypeElement#>)
+<#+
+        For Each parameter As FunctionImportParameter In parameters
+            If Not parameter.NeedsLocalVariable Then
+                Continue For
+            End If
+#>
+        Dim <#=parameter.LocalVariableName#> As ObjectParameter
+
+        If <#=If(parameter.IsNullableOfT, parameter.FunctionParameterName & ".HasValue", parameter.FunctionParameterName & " IsNot Nothing")#> Then
+            <#=parameter.LocalVariableName#> = New ObjectParameter("<#=parameter.EsqlParameterName#>", <#=parameter.FunctionParameterName#>)
+        Else
+            <#=parameter.LocalVariableName#> = New ObjectParameter("<#=parameter.EsqlParameterName#>", GetType(<#=parameter.RawClrTypeName#>))
+        End If
+<#+
+        Next
+#>
+        Return MyBase.ExecuteFunction(Of <#=returnTypeElement#>)("<#=edmFunction.Name#>"<#=code.StringBefore(", ", String.Join(", ", parameters.Select(Function(p) p.ExecuteParameterName).ToArray()))#>)
+    End Function
+<#+
+    Next
+
+region.End()
+#>
+
+    ''' <summary>
+    ''' Persists the changes to the database
+    ''' </summary>
+    ''' <returns>The number of records affected</returns>
+    Public Function Save() As Integer Implements IContext.Save
+        Return MyBase.SaveChanges()
+    End Function
+
+End Class
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

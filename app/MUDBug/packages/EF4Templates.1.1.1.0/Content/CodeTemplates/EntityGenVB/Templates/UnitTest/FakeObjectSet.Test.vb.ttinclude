@@ -1,0 +1,235 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="EntityRepoTest.vb.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class FakeObjectSetTestVb
+	Inherits Template
+
+	Public Function GetKeyPropName(entity As EntityType, ef As MetadataTools, code As CodeGenerationTools) As String
+		Dim RetVal As String = String.Empty
+
+		For Each edmProperty As EdmProperty In entity.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is entity)
+			If ef.IsKey(edmProperty) Then
+				RetVal = code.Escape(edmProperty)
+				Exit For
+			End If
+		Next
+		Return RetVal
+	End Function
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+		
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "// No EntityContainer exists in the model, so no code was generated"
+		End If
+		
+#>
+<#=EfUtils.WriteHeader()#>
+
+Imports System
+Imports System.Collections 
+Imports System.Collections.Generic
+Imports System.Linq
+Imports Microsoft.VisualStudio.TestTools.UnitTesting
+Imports <#=EntityGenerator.NamespaceName#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+<#+
+	PushIndent(CodeRegion.GetIndent(1))
+#>
+
+	''' <summary>
+	'''This is a test class for FakeObjectSetTest and is intended
+	'''to contain all FakeObjectSetTest Unit Tests
+	'''</summary>
+	<TestClass> _
+	Public Class FakeObjectSetTest
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet constructor is null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_Constructor_ShouldNotBeNull()
+			Dim target As New FakeObjectSet(Of DummyObject)()
+			Assert.IsNotNull(target)
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet AddObject method should return one
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_AddObject_CountShouldBeOne()
+			Dim expected As Integer = 1
+	
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim dum As New DummyObject() With { _
+				.DummyText = "Duh!" _
+			}
+	
+			fos.AddObject(dum)
+	
+			Assert.AreEqual(Of Integer)(expected, fos.Count())
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet Attach method should return one
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_Attach_CountShouldBeOne()
+			Dim expected As Integer = 1
+	
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim dum As New DummyObject() With { _
+				.DummyText = "Duh!" _
+			}
+	
+			fos.Attach(dum)
+	
+			Assert.AreEqual(Of Integer)(expected, fos.Count())
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet DeleteObject method should return zero
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_DeleteObject_CountShouldBeZero()
+			Dim expected As Integer = 0
+	
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim dum As New DummyObject() With { _
+				.DummyText = "Duh!" _
+			}
+	
+			fos.Attach(dum)
+	
+			fos.DeleteObject(dum)
+	
+			Assert.AreEqual(Of Integer)(expected, fos.Count())
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet Detach method should return zero
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_Detach_CountShouldBeZero()
+			Dim expected As Integer = 0
+	
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim dum As New DummyObject() With { _
+				.DummyText = "Duh!" _
+			}
+	
+			fos.Attach(dum)
+	
+			fos.Detach(dum)
+	
+			Assert.AreEqual(Of Integer)(expected, fos.Count())
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet GetEnumerator method target is null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_GetEnumerator_ShouldNotBeNull()
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim en As IEnumerator(Of DummyObject) = fos.GetEnumerator()
+	
+			Assert.IsNotNull(en)
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet GetTheEnumerator method target is null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_GetTheEnumerator_ShouldNotBeNull()
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim en As System.Collections.IEnumerator = fos.GetTheEnumerator()
+	
+			Assert.IsNotNull(en)
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet ElementType method target is null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_ElementType_ShouldNotBeNull()
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim target As Type = fos.ElementType
+			Assert.IsNotNull(target)
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet Provider method target is null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_Provider_ShouldNotBeNull()
+			Dim fos As New FakeObjectSet(Of DummyObject)()
+			Dim target As IQueryProvider = fos.Provider
+			Assert.IsNotNull(target)
+		End Sub
+	
+        ''' <summary>
+        ''' Tests whether the FakeObjectSet GetSystemEnumerator method target is null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeObjectSet_GetSystemEnumerator_ShouldNotBeNull()
+			FakeObjectSet_GetSystemEnumerator_ShouldNotBeNullHelper(Of GenericParameterHelper)()
+		End Sub
+	
+		Private Sub FakeObjectSet_GetSystemEnumerator_ShouldNotBeNullHelper(Of T As Class)()
+			Dim target As IEnumerable = New FakeObjectSet(Of T)()
+			Dim actual As IEnumerator
+			actual = target.GetEnumerator()
+			Assert.IsNotNull(actual)
+		End Sub
+	
+	End Class
+	
+	''' <summary>
+	''' Dummy object for unit testing
+	''' </summary>
+	Public Class DummyObject
+	
+		''' <summary>
+		''' Dummy object constructor
+		''' </summary>
+		Public Sub New()
+		End Sub
+	
+		''' <summary>
+		''' Dummy Text string property
+		''' </summary>
+		Public Property DummyText() As String
+			Get
+				Return m_DummyText
+			End Get
+			Set
+				m_DummyText = Value
+			End Set
+		End Property
+		Private m_DummyText As String
+	End Class
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

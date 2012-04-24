@@ -1,0 +1,27 @@
+﻿<#+
+// <copyright file="Blank.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class DataServiceSvc : Template
+{
+
+	private string GetNamespace()
+	{   if (!string.IsNullOrEmpty(EntityGenerator.NamespaceName)) {
+			return EntityGenerator.NamespaceName + ".";
+		} else { return ""; } }
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+#>
+<%@ ServiceHost Language="<#=EntityGenerator.LanguageString().ToUpperInvariant()#>" Factory="System.Data.Services.DataServiceHostFactory, System.Data.Services, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" 
+	Service="<#=GetNamespace()#><#=code.Escape(EntityGenerator.EntityContainerName + "DataService")#>" %>
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

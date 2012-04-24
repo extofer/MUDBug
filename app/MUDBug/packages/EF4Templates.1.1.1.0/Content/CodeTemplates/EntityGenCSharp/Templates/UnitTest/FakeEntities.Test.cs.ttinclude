@@ -1,0 +1,116 @@
+﻿<#+
+// <copyright file="FakeEntities.Test.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class FakeEntitiesTestCs : Template
+{
+
+	public string GetKeyPropName(EntityType entity, MetadataTools ef, CodeGenerationTools code) {
+		string RetVal = string.Empty;
+		 
+		foreach (EdmProperty edmProperty in entity.Properties.Where(p => p.TypeUsage.EdmType is PrimitiveType && p.DeclaringType == entity))
+		{
+			if (ef.IsKey(edmProperty)) {
+				RetVal = code.Escape(edmProperty);
+				break;
+			}
+		}		
+		return RetVal;
+	}
+	
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+		
+#>
+<#=EfUtils.WriteHeader(new string[] {"System", "System.Collections", 
+	"System.Collections.Generic", "System.Data.Objects", "System.Linq", 
+	"Microsoft.VisualStudio.TestTools.UnitTesting", 
+	EntityGenerator.NamespaceName})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+
+   /// <summary>
+    ///This is a test class for FakeEntities and is intended
+    ///to contain all FakeEntities Unit Tests
+    ///</summary>
+    [TestClass()]
+    public class FakeEntitiesTest
+    {
+
+        /// <summary>
+        /// Tests whether the fake entities constructor is not null
+        /// </summary>
+        [TestMethod()]
+        public void FakeEntities_Constructor_ShouldNotBeNull()
+        {
+            <#=code.Escape("Fake" + container.Name)#> target = new <#=code.Escape("Fake" + container.Name)#>();
+            Assert.IsNotNull(target);
+        }
+
+        /// <summary>
+        /// Tests whether the fake entities constructor with a connection string is not null
+        /// </summary>
+        [TestMethod()]
+        public void FakeEntities_ConstructorWithConnectionString_ShouldNotBeNull()
+        {
+            string conn = "No connection string";
+            <#=code.Escape("Fake" + container.Name)#> target = new <#=code.Escape("Fake" + container.Name)#>(conn);
+            Assert.IsNotNull(target);
+        }
+
+        /// <summary>
+        /// Tests whether the save method returns one
+        /// </summary>
+        [TestMethod()]
+        public void FakeEntities_Save_ShouldReturnOne()
+        {
+            <#=code.Escape("Fake" + container.Name)#> target = new <#=code.Escape("Fake" + container.Name)#>();
+            target.Initialize();
+            int actual = target.Save();
+            int expected = 1;
+            target.Dispose();
+            Assert.AreEqual<int>(expected, actual);
+        }
+
+<#+ 
+			foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>().OrderBy(e => e.Name)) {
+				var entity = entitySet.ElementType;
+#>
+    
+    #region <#=code.Escape(entitySet)#>
+	
+        /// <summary>
+        /// Tests whether the <#=code.Escape(entitySet)#> property is not null
+        /// </summary>
+        [TestMethod()]
+        public void FakeEntities_<#=code.Escape(entitySet)#>_ShouldNotBeNull()
+        {
+            <#=code.Escape("Fake" + container.Name)#> target = new <#=code.Escape("Fake" + container.Name)#>();
+            IObjectSet<<#=code.Escape(entity)#>> actual = target.<#=code.Escape(entitySet)#>;
+            Assert.IsNotNull(actual);
+        }
+
+    #endregion
+
+<#+ 
+			}
+#>
+    }
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

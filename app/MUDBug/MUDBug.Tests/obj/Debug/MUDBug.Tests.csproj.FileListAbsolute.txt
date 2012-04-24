@@ -1,0 +1,8 @@
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\MUDBug.Tests.dll.config
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\MUDBug.Tests.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\MUDBug.Tests.pdb
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\MUDBug.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\MUDBug.pdb
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\obj\Debug\MUDBug.Tests.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\obj\Debug\MUDBug.Tests.pdb

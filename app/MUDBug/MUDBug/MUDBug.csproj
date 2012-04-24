@@ -39,6 +39,8 @@
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Web.Mvc, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Web.WebPages, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Web.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
@@ -68,9 +70,49 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\AccountModels.cs" />
+    <Compile Include="Models\DayCheckList.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\DBStats.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DBStats.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Models\File_growth.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\IndexFrag.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MonthCheckList.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MUDBUGDriveSpace.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MUDBugErrorLog.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MUDBugModel.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MUDBugModel.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MUDBugModel.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MUDBugRestart.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProcdureExecutionTime.cs">
+      <DependentUpon>MUDBugModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\style.css" />
     <Content Include="Content\themes\base\images\ui-bg_flat_0_aaaaaa_40x100.png" />
     <Content Include="Content\themes\base\images\ui-bg_flat_75_ffffff_40x100.png" />
     <Content Include="Content\themes\base\images\ui-bg_glass_55_fbf9ee_1x400.png" />
@@ -98,6 +140,7 @@
     <Content Include="Content\themes\base\jquery.ui.slider.css" />
     <Content Include="Content\themes\base\jquery.ui.tabs.css" />
     <Content Include="Content\themes\base\jquery.ui.theme.css" />
+    <Content Include="EF4Templates.txt" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\jquery-1.5.1-vsdoc.js" />
     <Content Include="Scripts\jquery-1.5.1.js" />
@@ -107,8 +150,11 @@
     <Content Include="Scripts\jquery.validate-vsdoc.js" />
     <Content Include="Scripts\jquery.validate.js" />
     <Content Include="Scripts\jquery.validate.min.js" />
+    <Content Include="Scripts\libs\jquery-1.7.2.min.js" />
+    <Content Include="Scripts\libs\modernizr-2.5.3-respond-1.1.0.min.js" />
     <Content Include="Scripts\modernizr-1.7.js" />
     <Content Include="Scripts\modernizr-1.7.min.js" />
+    <Content Include="Scripts\script.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -144,6 +190,25 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EntityDeploy Include="Models\DBStats.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>DBStats.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Models\MUDBugModel.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MUDBugModel.Context.cs</LastGenOutput>
+    </None>
+    <None Include="Models\MUDBugModel.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MUDBugModel.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />

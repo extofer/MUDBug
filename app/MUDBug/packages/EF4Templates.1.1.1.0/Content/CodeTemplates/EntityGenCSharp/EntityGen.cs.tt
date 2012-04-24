@@ -1,0 +1,117 @@
+﻿<#@ template language="C#" hostspecific="True" debug="True" #>
+<#@ output extension="txt" #>
+<#@ include file="T4Toolbox.tt" #>
+<#@ include file="EF.Utility.CS.ttinclude"#>
+<#@ include file="Includes\EfUtils.cs.ttinclude"#>
+<#@ include file="Includes\EntityGenerator.cs.ttinclude"#>
+
+<#@ include file="Templates\Self-Tracking\Context.cs.ttinclude"#>
+<#@ include file="Templates\Self-Tracking\Context.Extensions.cs.ttinclude"#>
+<#@ include file="Templates\Self-Tracking\IContext.cs.ttinclude"#>
+<#@ include file="Templates\Self-Tracking\Model.cs.ttinclude"#>
+<#@ include file="Templates\Self-Tracking\FakeContext.cs.ttinclude"#>
+<#@ include file="Templates\Repository-Pattern\Repo.cs.ttinclude"#>
+<#@ include file="Templates\Validation\Validation.cs.ttinclude"#>
+<#@ include file="Templates\ODataService\DataService.svc.cs.ttinclude"#>
+<#@ include file="Templates\ODataService\DataService.svc.ttinclude"#>
+<#@ include file="Templates\UnitTest\EntityRepo.Test.cs.ttinclude"#>
+<#@ include file="Templates\UnitTest\FakeEntities.Test.cs.ttinclude"#>
+<#@ include file="Templates\UnitTest\FakeObjectSet.Test.cs.ttinclude"#>
+<#
+// <copyright file="EntityGen.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+	// ****************************************************************
+	// ** Description:
+	// ****************************************************************
+	// This template generates a bunch of different code.
+	//   1. POCO self-tracking entities with IContext, so it can be 
+	//      unit tested. It also includes a fake context for testing.
+	//   2. Validation, using data annotations, for WPF, ASP.NET and 
+	//      Silverlight RIA Services.
+	//
+	// ****************************************************************
+	// ** References needed: (depending on what is generated)
+	// ****************************************************************
+	//   System.ComponentModel.DataAnnotations
+	//   System.Data.Entity
+	//   System.Data.Services
+	//   System.Data.Services.Client
+	//   System.Runtime.Serialization
+	//   System.Security
+	//   System.ServiceModel
+	//   System.ServiceModel.Web
+	//   System.Web
+	//   System.Web.ApplicationServices
+	//
+	// ****************************************************************
+	// ** Change Log
+	// ****************************************************************
+	// 2010/09/01 - Initial creation
+	// 2010/09/14 - Added xml documentation
+	// 2010/09/17 - Added unit tests for repository and fake objectset
+	// 2010/09/27 - Changed EntityRepo to use IUnitOfWork and modified 
+	//            unit tests so they properly use the GetById() method
+	// 2010/10/12 - Fixed bug in the fake object set that would cause
+	//              unit tests to fail
+	// 2010/12/03 - Fixed bug with entityset-entity naming with plurals
+	// 2011/12/01 - Added IDisposable to IContext so you can use a 
+	//              using statement with it.
+	
+	// Location to your entity model .edmx file
+	string inputFile = @"..\..\TestModel.edmx";
+
+	// **********************************************************************
+	// Don't modify the code below 
+	// **********************************************************************
+	CodeGenerationTools code = new CodeGenerationTools(this);
+	MetadataLoader loader = new MetadataLoader(this);
+    MetadataTools ef = new MetadataTools(this);
+    MetadataWorkspace metadataWorkspace = null;
+    bool allMetadataLoaded = loader.TryLoadAllMetadata(inputFile, out metadataWorkspace);
+
+	EntityGenerator.EdmxFile = inputFile;
+	if (allMetadataLoaded) 
+	{
+		EntityGenerator.ItemCollection = (EdmItemCollection)metadataWorkspace.GetItemCollection(DataSpace.CSpace);
+		EntityGenerator.StoreItemCollection = (StoreItemCollection)metadataWorkspace.GetItemCollection(DataSpace.SSpace);
+		EntityGenerator.MetadataWorkspace = metadataWorkspace;
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (!object.Equals(container, null)) {
+			EntityGenerator.EntityContainerName = container.Name;
+		}
+		else 
+		{
+			// No code generated because container is empty.
+			throw new TransformationException("No code generated because container is empty.");
+		}
+	}
+	else 
+	{
+		// No code generated because of an error.
+		throw new TransformationException("No code generated because of an error.");
+	}
+	// **********************************************************************
+	// Modify this stuff below
+	// **********************************************************************
+
+	// Namespace
+	EntityGenerator.NamespaceName = "SomeNamespace"; // code.VsNamespaceSuggestion();
+	EntityGenerator.Language = DefLanguage.CSharp;
+
+	EntityGenerator.Technology = DefTechnology.ASPNET;
+	// Allow certain parts of the generated code to be excluded from code coverage or
+	// code contracts
+	EntityGenerator.ExcludeFromCodeCoverage = true;
+	
+	EntityGenerator.GenerateODataService = false;
+	EntityGenerator.GenerateRepository = true;
+	EntityGenerator.GenerateUnitTests = true;
+	EntityGenerator.GenerateValidation  = false;
+
+	EntityGenerator gen = new EntityGenerator();
+	gen.Run();
+
+#>
+<#="Files generated"#>

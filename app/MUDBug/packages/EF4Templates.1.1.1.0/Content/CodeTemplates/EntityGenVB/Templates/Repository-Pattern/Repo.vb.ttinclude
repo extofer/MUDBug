@@ -1,0 +1,380 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="Template.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class RepoVb
+	Inherits Template
+
+	Private Function FixCase(text)
+		Dim r as String = ""
+		
+		If Not String.IsNullOrEmpty(text) Then
+			r = text.Substring(0, 1).ToLowerInvariant()
+			r += text.Substring(1)
+			return r
+		End If
+		return String.Empty
+	End Function
+	
+	Private Function GetIdKey(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += "ByVal " + FixCase(code.Escape(edmProperty)) + " as " + code.Escape(edmProperty.TypeUsage) + ", "
+			End If
+		Next
+		If idKey.EndsWith(", ") Then idKey = idKey.Substring(0, idKey.Length -2).Trim()
+		return idKey
+	End Function
+
+	Private Function GetIdKeyParams(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += code.Escape(edmProperty) + ", "
+			End If
+		Next
+		If idKey.EndsWith(", ") Then idKey = idKey.Substring(0, idKey.Length -2).Trim()
+		return idKey
+	End Function
+
+	Private Function GetIdKeyXmlDoc(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim s as String = "''' <param name=""{0}"">{1} (primary key field)</param>"	
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += String.Format(s, FixCase(code.Escape(edmProperty)), EfUtils.ParseCamelToProper(code.Escape(edmProperty))) + System.Environment.NewLine
+			End If
+		Next
+		If Not String.IsNullOrEmpty(idKey) Then if idKey.EndsWith(System.Environment.NewLine) Then idKey = idKey.Substring(0, idkey.Length - (System.Environment.NewLine.Length))
+		return idKey
+	End Function
+
+	Private Function GetIdKeyLinq(ByVal code as CodeGenerationTools, ByVal ef as MetadataTools, ByVal table as EntityType) as String
+		Dim idKey as String = String.Empty
+		For Each edmProperty As EdmProperty In table.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is table)
+			If ef.IsKey(edmProperty) Then
+				idKey += "g." + code.Escape(edmProperty) + " = " + FixCase(code.Escape(edmProperty)) + " and "
+			End If
+		Next
+		If Not String.IsNullOrEmpty(idKey) Then idKey = idKey.Substring(0, idKey.Length -5).Trim()
+		return idKey
+	End Function
+
+Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "' No EntityContainer exists in the model, so no code was generated"
+		End If
+#>
+<#=EfUtils.WriteHeader()#>
+
+Imports System.ComponentModel
+Imports System.Web
+Imports System.Data
+Imports System.Data.Common
+Imports System.Data.Objects
+Imports System.Data.EntityClient
+
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+	PushIndent(CodeRegion.GetIndent(1))
+#>
+
+''' <summary>
+''' Unit of work interface defines a block of work to process in a transaction
+''' </summary>
+Public Interface IUnitOfWork
+	
+    ''' <summary>
+    ''' Commits the changes to the database
+    ''' </summary>
+	Function Commit() as Integer
+End Interface
+
+''' <summary>
+''' Repository pattern interface
+''' </summary>
+''' <typeparam name="T">Type of repository model</typeparam>
+''' <remarks>
+''' <para>
+''' The <c>IEntityRepository</c> interface is utilized because it 
+''' enables us to have a fake entity context for testing. By using 
+''' a fake entity, it allows us to write unit tests that can test 
+''' the repository.
+''' </para>
+''' <example>
+''' <code>
+'''Using context As New MyEntities()
+'''    Dim Repo As New EntityRepo(context)
+'''    If ((From g In Repo.Contact.List() Where g.Email = email Select g).Count() = 0) Then
+'''        Dim contact As New Contact()
+'''        contact.Email = email
+'''        contact.DateAdded = DateTime.Now
+'''
+'''        Repo.Contact.Add(contact)
+'''    End If
+'''End Using
+''' </code>
+''' </example>
+''' </remarks>
+Public Interface IEntityRepository(Of T)
+
+	''' <summary>
+	''' Adds an entity in the database
+	''' </summary>
+	''' <param name="entity">The entity to add</param>
+	Sub Add(ByVal entity As T)
+
+    ''' <summary>
+    ''' Deletes an entity from the database
+    ''' </summary>
+    ''' <param name="entity">The entity to delete</param>
+	Sub Delete(ByVal entity As T)
+
+	'Sub DeleteById(ByVal id As Integer)
+	'Function GetById(ByVal id As Integer) As T
+
+	''' <summary>
+    ''' Retrieves a list of entities, which is filterable due to being an 
+    ''' IQueryable.
+    ''' </summary>
+    ''' <returns>List of entities</returns>
+	Function List() As IQueryable(Of T)
+
+    ''' <summary>
+    ''' Updates the entity in the database
+    ''' </summary>
+    ''' <param name="entity">The entity to update</param>
+    Sub Update(ByVal entity As T)
+	
+    ''' <summary>
+    ''' Whether the model has validation errors
+    ''' </summary>
+	Property HasValidationErrors as Boolean
+
+    ''' <summary>
+    ''' Validation errors string
+    ''' </summary>
+    ''' <remarks>Will be null if no errors</remarks>
+	Property ValidationErrors As String
+End Interface
+
+''' <summary>
+''' Main repository for the Entities
+''' </summary>
+''' <remarks></remarks>
+Partial Public NotInheritable Class EntityRepo
+
+	Private context as IContext
+
+    ''' <summary>
+    ''' Repository Constructor
+    ''' </summary>
+    ''' <param name="context">The context to use</param>
+	Public Sub New(ByVal context as IContext)
+		Me.context = context
+	End Sub
+
+<#+
+	For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)().OrderBy(Function(e) e.Name)
+		Dim entity as System.Data.Metadata.Edm.EntityType = entitySet.ElementType
+#>
+    Private <#=code.Escape("_" + entity.Name)#> As <#=code.Escape(entity.Name + "Repo")#>
+    ''' <summary>
+    ''' <#=code.Escape(entity.Name)#> repo
+    ''' </summary>
+    ''' <seealso cref="<#=code.Escape(entity.Name)#>">Model: <#=code.Escape(entity.Name)#></seealso>
+    Public ReadOnly Property <#=code.Escape(entity.Name)#> As <#=code.Escape(entity.Name + "Repo")#>
+        Get
+            If <#=code.Escape("_" + entity.Name)#> Is Nothing Then <#=code.Escape("_" + entity.Name)#> = New <#=code.Escape(entity.Name + "Repo")#>(me.context)
+            Return <#=code.Escape("_" + entity.Name)#>
+        End Get
+    End Property
+
+<#+
+	Next
+#>
+
+    ''' <summary>
+    ''' Commits the changes to the database
+    ''' </summary>
+	''' <returns>Returns number of records affected</returns>
+	Public Function Commit() as integer
+		return context.Save()
+	End Function
+
+End Class
+
+<#+
+	For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)().OrderBy(Function(e) e.Name)
+		Dim entity as System.Data.Metadata.Edm.EntityType = entitySet.ElementType
+#>
+''' <summary>
+''' Repository for the <#=code.Escape(entity.Name)#> model
+''' </summary>
+Partial Public Class <#=code.Escape(entity.Name + "Repo")#>
+    Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>)
+		
+<#+region.Begin("Constructor", 1)#>
+
+    ''' <summary>
+    ''' Constructor for the <#=code.Escape(entity.Name + "Repo")#> repository
+    ''' </summary>
+    ''' <param name="c">The context to use</param>
+    Public Sub New(ByVal c as IContext)
+		Me.context = c
+    End Sub
+
+<#+region.End(1)#>
+<#=""#>
+<#+region.Begin("Methods", 1)#>
+
+    ''' <summary>
+    ''' Add a entity to the database
+    ''' </summary>
+    ''' <param name="entity">Entity to process</param>
+    <DataObjectMethod(DataObjectMethodType.Insert, False)> _
+    Public Sub Add(ByVal entity As <#=code.Escape(entity.Name)#>) Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>).Add
+        HasValidationErrors = False
+        ValidationErrors = String.Empty
+        Validate(entity)
+        If HasValidationErrors = False Then
+			Me.Context.<#=code.Escape(entitySet.Name)#>.AddObject(entity)
+			' SaveChanges()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Delete an entity from the database
+    ''' </summary>
+    ''' <param name="entity">Entity to process</param>
+    <DataObjectMethod(DataObjectMethodType.Delete, False)> _
+    Public Sub Delete(ByVal entity As <#=code.Escape(entity.Name)#>) Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>).Delete
+        Me.Context.<#=code.Escape(entitySet.Name)#>.DeleteObject(entity)
+        ' SaveChanges()
+    End Sub
+
+    ''' <summary>
+    ''' Update an entity in the database
+    ''' </summary>
+    ''' <param name="entity">Entity to process</param>
+    <DataObjectMethod(DataObjectMethodType.Update, False)> _
+    Public Sub Update(ByVal entity As <#=code.Escape(entity.Name)#>) Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>).Update
+        HasValidationErrors = False
+        ValidationErrors = String.Empty
+        Validate(entity)
+        If HasValidationErrors = False Then
+			' Not needed for update
+			' Me.Context.<#=code.Escape(entitySet.Name)#>.AddObject(entity)
+	        ' SaveChanges()
+        End If
+    End Sub
+
+<#+
+	For Each edmProperty As EdmProperty In entity.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is entity)
+		If ef.IsKey(edmProperty) Then
+#>
+    ''' <summary>
+    ''' Deletes an entity from the database
+    ''' </summary>
+    <#=GetIdKeyXmlDoc(code, ef, entity)#>
+    <DataObjectMethod(DataObjectMethodType.Delete, False)> _
+    Public Sub DeleteById(<#=GetIdKey(code, ef, entity)#>)
+        Dim entity As <#=code.Escape(entity.Name)#> = GetById(<#= GetIdKeyParams(code, ef, entity)#>)
+        If Not entity Is Nothing Then Delete(entity)
+    End Sub
+	
+<#+
+			Exit For
+		End If
+	Next
+#>
+
+<#+
+	For Each edmProperty As EdmProperty In entity.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is entity)
+		If ef.IsKey(edmProperty) Then
+#>
+    ''' <summary>
+    ''' Gets an entity in the database
+    ''' </summary>
+    <#=GetIdKeyXmlDoc(code, ef, entity)#>
+	''' <returns>Returns the entity</returns>
+    <DataObjectMethod(DataObjectMethodType.Select, False)> _
+    Public Function GetById(<#=GetIdKey(code, ef, entity)#>) As <#=code.Escape(entity.Name)#>
+		Return (From g In Me.Context.<#=code.Escape(entitySet.Name)#> Where <#=GetIdKeyLinq(code, ef, entity)#> Select g).Take(1).FirstOrDefault()
+    End Function
+<#+
+			Exit For
+		End If
+	Next
+#>
+
+    ''' <summary>
+    ''' Gets a list of entities from the database
+    ''' </summary>
+	''' <returns>Returns a queriable list of entities</returns>
+    <DataObjectMethod(DataObjectMethodType.Select, False)> _
+    Public Function List() As System.Linq.IQueryable(Of <#=code.Escape(entity.Name)#>) Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>).List
+        Return Me.Context.<#=code.Escape(entitySet.Name)#>
+    End Function
+
+
+    'Private Sub Validate(ByVal entity As <#=code.Escape(entity.Name)#>)
+    '    HasValidationErrors = False
+    '    ValidationErrors = String.Empty
+
+    '    ' TODO: Validate the entry here.
+
+    '    If Not String.IsNullOrEmpty(ValidationErrors) Then HasValidationErrors = True
+    'End Sub
+
+    ''' <summary>
+    ''' Partial method to validate an entity from the database
+    ''' </summary>
+    ''' <param name="entity">entity to validate</param>
+    Partial Private Sub Validate(ByVal entity As <#=code.Escape(entity.Name)#>)
+    End Sub
+
+<#+region.End(1)#>
+<#=""#>
+<#+region.Begin("Properties", 1)#>
+
+	Private context as IContext
+
+    ''' <summary>
+    ''' Returns the validation errors for the model
+    ''' </summary>
+    ''' <remarks>Will be null if there is no errors</remarks>
+    Public Property ValidationErrors As String Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>).ValidationErrors
+
+    ''' <summary>
+    ''' Returns whether the model has validation errors
+    ''' </summary>
+	Public Property HasValidationErrors as Boolean Implements IEntityRepository(Of <#=code.Escape(entity.Name)#>).HasValidationErrors
+
+<#+region.End(1)#>
+	
+End Class
+
+<#+
+Next
+#>
+<#+
+	PopIndent()
+#>
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

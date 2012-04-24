@@ -1,0 +1,2 @@
+EF4 Templates readme
+Please see http://ef4templates.codeplex.com/ for details.

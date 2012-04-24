@@ -1,0 +1,237 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="Template.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class FakeContextVb
+	Inherits Template
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+
+		Dim namespaceName As String = EntityGenerator.NamespaceName
+
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "' No EntityContainer exists in the model, so no code was generated"
+		End If
+
+#>
+<#=EfUtils.WriteContextHeader()#>
+Imports System.Data.Objects
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+' You really should copy this out of the generated folder, and edit as necessary.
+
+	''' <summary>
+	''' Fake entity context
+	''' </summary>
+	Partial Public Class FakeObjectSet(Of T As Class)
+		Implements IObjectSet(Of T)
+
+		Private ReadOnly _Container As IList(Of T) = New List(Of T)
+
+		''' <summary>
+		''' Gets the enumerator for the fake objectset
+		''' </summary>
+		''' <returns>IEnumerator(of T)</returns>
+		Public Function GetEnumerator() As System.Collections.Generic.IEnumerator(Of T) Implements System.Collections.Generic.IEnumerable(Of T).GetEnumerator
+			Return _Container.GetEnumerator()
+		End Function
+
+		''' <summary>
+		''' Gets the enumerator for the fake objectset
+		''' </summary>
+		''' <returns>IEnumerator(of T)</returns>
+		Public Function GetTheEnumerator() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+			Return Me.GetEnumerator()
+		End Function
+
+		''' <summary>
+		''' Adds the entity to the fake collection
+		''' </summary>
+		''' <param name="entity">Entity to add</param>
+		Public Sub AddObject(ByVal entity As T) Implements System.Data.Objects.IObjectSet(Of T).AddObject
+            If Not _Container.Contains(entity) Then
+                _Container.Add(entity)
+            End If
+		End Sub
+
+		''' <summary>
+		''' Adds the entity to the fake collection
+		''' </summary>
+		''' <param name="entity">Entity to add</param>
+		Public Sub Attach(ByVal entity As T) Implements System.Data.Objects.IObjectSet(Of T).Attach
+            If Not _Container.Contains(entity) Then
+                _Container.Add(entity)
+            End If
+		End Sub
+
+		''' <summary>
+		''' Deletes the entity from the fake collection
+		''' </summary>
+		''' <param name="entity">Entity to delete</param>
+		Public Sub DeleteObject(ByVal entity As T) Implements System.Data.Objects.IObjectSet(Of T).DeleteObject
+            If _Container.Contains(entity) Then
+				_Container.Remove(entity)
+            End If
+		End Sub
+
+		''' <summary>
+		''' Deletes the entity from the fake collection
+		''' </summary>
+		''' <param name="entity">Entity to delete</param>
+		Public Sub Detach(ByVal entity As T) Implements System.Data.Objects.IObjectSet(Of T).Detach
+            If _Container.Contains(entity) Then
+				_Container.Remove(entity)
+            End If
+		End Sub
+
+		''' <summary>
+		''' Gets the type of entity
+		''' </summary>
+		Public ReadOnly Property ElementType As System.Type Implements System.Linq.IQueryable.ElementType
+			Get
+				Return GetType(T)
+			End Get
+		End Property
+
+		''' <summary>
+		''' Gets the linq expression
+		''' </summary>
+		Public ReadOnly Property Expression As System.Linq.Expressions.Expression Implements System.Linq.IQueryable.Expression
+			Get
+				Return _Container.AsQueryable().Expression()
+			End Get
+		End Property
+
+		''' <summary>
+		''' Gets the linq provider
+		''' </summary>
+		Public ReadOnly Property Provider As System.Linq.IQueryProvider Implements System.Linq.IQueryable.Provider
+			Get
+				Return _Container.AsQueryable().Provider()
+			End Get
+		End Property
+
+	End Class
+
+''' <summary>
+''' Fake entity objectsets for testing
+''' </summary>
+Partial <#=Accessibility.ForType(container)#> Class <#=code.Escape("Fake" + container.Name)#>
+	Implements IContext, IDisposable
+
+
+<#+
+region.Begin("Constructors")
+#>
+
+    ''' <summary>
+    ''' Constructor
+    ''' </summary>
+    Public Sub New()
+        Initialize()
+    End Sub
+
+    ''' <summary>
+    ''' Constructor
+    ''' </summary>
+    ''' <param name="connectionString">Connection string</param>
+	''' <remarks>To maintain compatibility with the real context</remarks>
+    Public Sub New(ByVal connectionString As String)
+        Initialize()
+		' This is for Code Analysis error CA1801. 
+		' Not really needed but kept to maintain functionality with
+		' the real context.
+		System.Diagnostics.Debug.WriteLine(String.Format("Connection string: {0}", connectionString))
+		
+    End Sub
+
+	''' <summary>
+	''' Initialize fake data for the fake context
+	''' </summary>
+    Private Sub Initialize()
+		' TODO: Initialize the fake context
+    End Sub
+
+<#+
+region.End()
+#>
+<#=""#>
+<#+
+region.Begin("ObjectSet Properties")
+
+	For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)()
+		Dim entity = entitySet.ElementType
+#>
+
+	Private _<#=code.Escape(entitySet)#> as New FakeObjectSet(Of <#=code.Escape(entitySet.ElementType)#>)
+    ''' <summary>
+    ''' Gets the fake <#=code.Escape(entitySet)#> IObjectSet
+    ''' </summary>
+    <#=Accessibility.ForReadOnlyProperty(entitySet)#> Overridable ReadOnly Property <#=code.Escape(entitySet)#>() As IObjectSet(Of <#=code.Escape(entitySet.ElementType)#>) Implements IContext.<#=code.Escape(entitySet)#>
+        Get
+            Return _<#=code.Escape(entitySet)#>
+        End Get
+    End Property
+	
+<#+
+    Next
+
+region.End()
+#>
+
+    ''' <summary>
+    ''' Persists the changes to the database
+    ''' </summary>
+    ''' <returns>The number of records affected</returns>
+    Public Function Save() As Integer Implements IContext.Save
+		return Convert.ToInt32(1)
+    End Function
+
+#Region "IDisposable Support"
+
+    Private disposedValue As Boolean ' To detect redundant calls
+
+    ''' <summary>
+    ''' IDisposable
+    ''' </summary>
+    ''' <param name="disposing">Is the object disposing?</param>
+    ''' <remarks></remarks>
+    Protected Overridable Sub Dispose(ByVal disposing As Boolean)
+        If Not Me.disposedValue Then
+            If disposing Then
+                ' TODO: dispose managed state (managed objects).
+            End If
+
+            ' TODO: free unmanaged resources (unmanaged objects) and override Finalize() below.
+            ' TODO: set large fields to null.
+        End If
+        Me.disposedValue = True
+    End Sub
+
+    ''' <summary>
+    ''' This code added by Visual Basic to correctly implement the disposable pattern.
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Sub Dispose() Implements IDisposable.Dispose
+        ' Do not change this code.  Put cleanup code in Dispose(ByVal disposing As Boolean) above.
+        Dispose(True)
+        GC.SuppressFinalize(Me)
+    End Sub
+
+#End Region
+
+End Class
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

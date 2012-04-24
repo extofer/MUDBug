@@ -1,0 +1,149 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="EntityGenerator.ttinclude" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class EntityGenerator
+	Inherits Generator
+
+	' Properties
+	Public Shared Property Language as DefLanguage = DefLanguage.VB			
+	Public Shared Property Technology as DefTechnology = DefTechnology.WPF
+	Public Shared Property ExcludeFromCodeCoverage as Boolean = false
+
+	Public Shared Property EdmxFile as String = ""
+	Public Shared Property NamespaceName as String = ""
+	Public Shared Property ItemCollection as EdmItemCollection = nothing
+	Public Shared Property StoreItemCollection as StoreItemCollection = nothing
+	Public Shared Property EntityContainerName as String = ""
+	Public Shared Property MetadataWorkspace as MetadataWorkspace = Nothing
+
+	Public Shared Property GenerateODataService as Boolean = False
+	Public Shared Property GenerateRepository as Boolean = True
+	Public Shared Property GenerateUnitTests as Boolean = True
+	Public Shared Property GenerateValidation as Boolean = True
+		
+	''' <summary>
+	''' Generates output.
+	''' </summary>
+	Protected Overrides Sub RunCore()	
+		Dim folder as String = EntityGenerator.TemplatePath
+		folder = System.IO.Path.Combine(folder, "Generated")
+		folder = System.IO.Path.Combine(folder, "EntityGenVb")
+
+		' Emit self-tracking entities
+		Dim selfTrackFolder as String = System.IO.Path.Combine(folder, "Self-Tracking Entities")
+		
+		If EntityGenerator.Language = DefLanguage.VB Then
+			Dim iContextVb as New IContextVb()
+			iContextVb.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "IContext." + EntityGenerator.LanguageFileString))
+			Dim ContextVb as New ContextVb()
+			ContextVb.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "Context." + EntityGenerator.LanguageFileString))
+			Dim ContextExtVb as New ContextExtVb()
+			ContextExtVb.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "Context.Extensions." + EntityGenerator.LanguageFileString))
+			Dim ModelVb as New ModelVb()
+			ModelVb.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "Model." + EntityGenerator.LanguageFileString))
+
+			Dim FakeContextVb as New FakeContextVb()
+			FakeContextVb.RenderToFile(System.IO.Path.Combine(selfTrackFolder, "FakeContext." + EntityGenerator.LanguageFileString))
+		ElseIf EntityGenerator.Language = DefLanguage.CSharp Then
+		
+		End If
+
+		' Emit OData service
+		If EntityGenerator.GenerateODataService Then
+			Dim serviceFolder as String = System.IO.Path.Combine(folder, "OData")
+			
+			Dim DataServiceSvc as New DataServiceSvc()
+			DataServiceSvc.RenderToFile(System.IO.Path.Combine(serviceFolder, EntityContainerName + ".svc"))
+			
+			If EntityGenerator.Language = DefLanguage.VB Then
+				Dim DataServiceSvcVb as New DataServiceSvcVb()
+				DataServiceSvcVb.RenderToFile(System.IO.Path.Combine(serviceFolder, EntityContainerName + ".svc." +  EntityGenerator.LanguageFileString))
+			End If
+		End If
+	
+		' Emit Repository
+		If EntityGenerator.GenerateRepository Then
+			Dim repoFolder as String = System.IO.Path.Combine(folder, "Repository")
+			
+			If EntityGenerator.Language = DefLanguage.VB Then
+				Dim RepoVb as New RepoVb()
+				RepoVb.RenderToFile(System.IO.Path.Combine(repoFolder, "Repo." + EntityGenerator.LanguageFileString))
+			ElseIf EntityGenerator.Language = DefLanguage.CSharp Then
+			
+			End If
+		End If
+	
+		' Emit Validation
+		If EntityGenerator.GenerateValidation Then
+			Dim valiFolder as String = System.IO.Path.Combine(folder, "Validation")
+			
+			If EntityGenerator.Language = DefLanguage.VB Then
+				Dim ValidationVb as New ValidationVb()
+				ValidationVb.RenderToFile(System.IO.Path.Combine(valiFolder, "Validation." + EntityGenerator.LanguageFileString))
+			ElseIf EntityGenerator.Language = DefLanguage.CSharp Then
+			
+			End If
+		End If
+		
+		' Emit Unit Tests
+		If EntityGenerator.GenerateUnitTests Then
+			Dim testFolder as String = System.IO.Path.Combine(folder, "Unit-Tests")
+
+			Dim EntityRepoTestVb as New EntityRepoTestVb()
+			EntityRepoTestVb.RenderToFile(System.IO.Path.Combine(testFolder, "EntityRepo.Tests." + EntityGenerator.LanguageFileString))
+			
+			Dim FakeEntitiesTestVb as New FakeEntitiesTestVb()
+			FakeEntitiesTestVb.RenderToFile(System.IO.Path.Combine(testFolder, "FakeEntities.Tests." + EntityGenerator.LanguageFileString))
+			
+			Dim FakeObjectSetTestVb as New FakeObjectSetTestVb()
+			FakeObjectSetTestVb.RenderToFile(System.IO.Path.Combine(testFolder, "FakeObjectSet.Tests." + EntityGenerator.LanguageFileString))
+		End If
+
+	End Sub
+
+	''' <summary>
+	''' Validates code generation parameters.
+	''' </summary>
+	Protected Overrides Sub Validate()
+	End Sub
+	
+	' The template path (to the project)
+	Public Shared ReadOnly Property TemplatePath() as String
+		Get
+			Return 	System.IO.Path.GetDirectoryName( _
+					System.IO.Path.GetDirectoryName( _
+					System.IO.Path.GetDirectoryName(TransformationContext.Host.TemplateFile)))
+		End Get
+	End Property
+
+	Public Shared Function LanguageString() as String
+		Dim tmp as String = EntityGenerator.Language.ToString().ToUpperInvariant()
+		If tmp = "CSHARP" Then tmp = "C#"
+		If tmp = "VB" Then tmp = "vb"
+		Return tmp
+	End Function	
+
+	Public Shared Function LanguageFileString() as String
+		Dim tmp as String = EntityGenerator.Language.ToString().ToUpperInvariant()
+		If tmp = "CSHARP" Then tmp = "cs"
+		If tmp = "VB" Then tmp = "vb"
+		Return tmp
+	End Function	
+
+End Class
+
+Public Enum DefLanguage as Integer
+	VB = 0
+	CSharp = 1
+End Enum
+
+Public Enum DefTechnology as Integer
+	SilverlightRIA = 0
+	ASPNET = 1
+	WPF = 2
+End Enum
+
+#>

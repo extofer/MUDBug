@@ -1,0 +1,203 @@
+﻿<#+
+// <copyright file="FakeObjectSet.Test.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class FakeObjectSetTestCs : Template
+{
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+#>
+<#=EfUtils.WriteHeader(new string[] {"System", "System.Collections", 
+	"System.Collections.Generic", "System.Linq", 
+	"Microsoft.VisualStudio.TestTools.UnitTesting", 
+	EntityGenerator.NamespaceName})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+
+    /// <summary>
+    ///This is a test class for FakeObjectSetTest and is intended
+    ///to contain all FakeObjectSetTest Unit Tests
+    ///</summary>
+    [TestClass()]
+    public class FakeObjectSetTest
+    {
+		
+        /// <summary>
+        /// Tests whether the FakeObjectSet constructor is null
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_Constructor_ShouldNotBeNull()
+        {
+            FakeObjectSet<DummyObject> target = new FakeObjectSet<DummyObject>();
+            Assert.IsNotNull(target);
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet AddObject method should return one
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_AddObject_CountShouldBeOne()
+        {
+            int expected = 1;
+
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            DummyObject dum = new DummyObject() { DummyText = "Duh!" };
+
+            fos.AddObject(dum);
+
+            Assert.AreEqual<int>(expected, fos.Count());
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet Attach method should return one
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_Attach_CountShouldBeOne()
+        {
+            int expected = 1;
+
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            DummyObject dum = new DummyObject() { DummyText = "Duh!" };
+
+            fos.Attach(dum);
+
+            Assert.AreEqual<int>(expected, fos.Count());
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet DeleteObject method should return zero
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_DeleteObject_CountShouldBeZero()
+        {
+            int expected = 0;
+
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            DummyObject dum = new DummyObject() { DummyText = "Duh!" };
+
+            fos.Attach(dum);
+
+            fos.DeleteObject(dum);
+
+            Assert.AreEqual<int>(expected, fos.Count());
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet Detach method should return zero
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_Detach_CountShouldBeZero()
+        {
+            int expected = 0;
+
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            DummyObject dum = new DummyObject() { DummyText = "Duh!" };
+
+            fos.Attach(dum);
+
+            fos.Detach(dum);
+
+            Assert.AreEqual<int>(expected, fos.Count());
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet GetEnumerator method target is null
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_GetEnumerator_ShouldNotBeNull()
+        {
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            IEnumerator<DummyObject> en = fos.GetEnumerator();
+
+            Assert.IsNotNull(en);
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet GetTheEnumerator method target is null
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_GetTheEnumerator_ShouldNotBeNull()
+        {
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            System.Collections.IEnumerator en = fos.GetTheEnumerator();
+
+            Assert.IsNotNull(en);
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet ElementType method target is null
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_ElementType_ShouldNotBeNull()
+        {
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            Type target = fos.ElementType;
+            Assert.IsNotNull(target);
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet Provider method target is null
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_Provider_ShouldNotBeNull()
+        {
+            FakeObjectSet<DummyObject> fos = new FakeObjectSet<DummyObject>();
+            IQueryProvider target = fos.Provider;
+            Assert.IsNotNull(target);
+        }
+
+        /// <summary>
+        /// Tests whether the FakeObjectSet GetSystemEnumerator method target is null
+        /// </summary>
+        [TestMethod()]
+        public void FakeObjectSet_GetSystemEnumerator_ShouldNotBeNull()
+        {
+            FakeObjectSet_GetSystemEnumerator_ShouldNotBeNullHelper<GenericParameterHelper>();
+        }
+
+        private void FakeObjectSet_GetSystemEnumerator_ShouldNotBeNullHelper<T>()
+        where T : class
+        {
+            IEnumerable target = new FakeObjectSet<T>();
+            IEnumerator actual;
+            actual = target.GetEnumerator();
+            Assert.IsNotNull(actual);
+        }
+
+    }
+
+    /// <summary>
+    /// Dummy object for unit testing
+    /// </summary>
+    public class DummyObject
+    {
+
+        /// <summary>
+        /// Dummy object constructor
+        /// </summary>
+        public DummyObject() { }
+
+        /// <summary>
+        /// Dummy Text string property
+        /// </summary>
+        public string DummyText { get; set; }
+    }
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

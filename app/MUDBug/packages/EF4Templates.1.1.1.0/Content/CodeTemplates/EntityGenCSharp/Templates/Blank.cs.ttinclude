@@ -1,0 +1,28 @@
+﻿<#+
+// <copyright file="Blank.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class BlankCs : Template
+{
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+#>
+<#=EfUtils.WriteHeader(new string[] {"System.ComponentModel"})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+<#=""#>
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

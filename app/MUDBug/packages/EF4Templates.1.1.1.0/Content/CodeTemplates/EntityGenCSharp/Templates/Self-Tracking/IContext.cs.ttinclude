@@ -1,0 +1,52 @@
+﻿<#+
+// <copyright file="Context.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class IContextCs : Template
+{
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);
+		
+		string namespaceName = EntityGenerator.NamespaceName;
+		
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+		
+#>
+<#=EfUtils.WriteContextHeader(new string[] {"System.Data.Objects"})#>
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+	
+	/// <summary>Interface for the context to enable unit testing and fake context</summary>
+	public interface IContext : IDisposable
+	{
+<#+
+		foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>().OrderBy(e => e.Name)) {
+			var entity = entitySet.ElementType;
+#>
+
+		/// <summary><#=code.Escape(entitySet)#> IObjectSet</summary>
+		IObjectSet<<#=code.Escape(entity)#>> <#=code.Escape(entitySet)#> { get; }
+<#+
+		}
+#>
+		/// <summary>Persists the changes to the database</summary>
+		/// <returns>The number of records affected</returns>
+		int Save();
+		
+		/// <summary>IDisposable Dispose method</summary>
+		void Dispose();
+	}
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

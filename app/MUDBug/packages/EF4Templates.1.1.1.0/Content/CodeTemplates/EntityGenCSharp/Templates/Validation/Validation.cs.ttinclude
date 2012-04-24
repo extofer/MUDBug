@@ -1,0 +1,143 @@
+﻿<#+
+// <copyright file="Validation.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class ValidationCs : Template
+{
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+#>
+<#=EfUtils.WriteHeader(new string[] {"System", "System.ComponentModel", "System.ComponentModel.DataAnnotations", "System.Reflection"})#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+<#+if (EntityGenerator.Technology == DefTechnology.WPF) {#>
+	<#+region.Begin("Validatable");#>
+
+	/// <summary>
+	/// Validating translater class for WPF using a sidecar metadata class like RIA services
+	/// </summary>
+	/// <typeparam name="T">The model class</typeparam>
+	/// <typeparam name="U">The model metadata class which must have the data 
+	/// annotations on the property, and the property must exist.</typeparam>
+	/// <remarks></remarks>
+	public class Validatable<T, U> : IDataErrorInfo
+	{
+
+		/// <summary>
+		/// Needed to get the property value. Is there a better way to do this?
+		/// </summary>
+		/// <value></value>
+		/// <returns></returns>
+		/// <remarks></remarks>
+		public object ParentObject { get; set; }
+
+		/// <summary>
+		/// Returns the errors reported
+		/// </summary>
+		/// <value></value>
+		/// <returns>String with the errors</returns>
+		/// <remarks></remarks>
+		string System.ComponentModel.IDataErrorInfo.Error { get { throw new NotImplementedException(); } }
+
+		/// <summary>
+		/// Gets an item by the column name
+		/// </summary>
+		/// <param name="columnName"></param>
+		/// <value></value>
+		/// <returns></returns>
+		/// <remarks></remarks>
+		public virtual string this[string columnName]
+		{
+			get
+			{
+				if (ParentObject == null)
+					return string.Empty;
+
+				// Get the property from the metadata class and DataAnnotations attributes
+				PropertyInfo prop = typeof(U).GetProperty(columnName);
+				var validationMap = prop.GetCustomAttributes(typeof(ValidationAttribute), true);
+
+				foreach (ValidationAttribute v in validationMap) {
+					try {
+						// Get the actual value and validate it
+						PropertyInfo pp = ParentObject.GetType().GetProperty(columnName);
+						object value = pp.GetValue(ParentObject, null);
+						v.Validate(value, columnName);
+						
+					} catch (Exception ex) {
+					
+						return ex.Message;
+					}
+				}
+
+				return null;
+			}
+		}
+	}
+
+	<#+region.End();#>
+	
+<#+ } #>
+
+<#+
+foreach (EntityType entity in EntityGenerator.ItemCollection.GetItems<EntityType>().OrderBy(e => e.Name))
+{
+#>
+	<#+region.Begin(code.Escape(entity));#>
+	
+	[MetadataType(typeof(<#=code.Escape(entity.Name + "Metadata")#>))]
+	<#=Accessibility.ForType(entity)#> partial class <#=code.Escape(entity.Name)#><#+ if (EntityGenerator.Technology == DefTechnology.WPF) {#> : Validatable<<#=code.Escape(entity.Name)#>, <#=code.Escape(entity.Name + "Metadata")#>><#+}#>
+	{
+	<#+ if (EntityGenerator.Technology == DefTechnology.WPF) {#>
+		/// <summary>
+		/// <c><#=code.Escape(entity.Name)#></c> constructor
+		/// </summary>
+		public <#=code.Escape(entity.Name)#>()
+		{ // Required for the validator
+			ParentObject = this; }
+	<#+} #>
+	
+		// Intentionally left blank
+	}
+	
+	/// <summary>
+	/// Metadata for the <#=code.Escape(entity.Name)#> class
+	/// </summary>
+	/// <remarks>Required for validation</remarks>
+    /// <seealso cref="<#=code.Escape(entity.Name)#>">Model: <#=code.Escape(entity.Name)#></seealso>
+	<#=Accessibility.ForType(entity)#> partial class <#=code.Escape(entity.Name + "Metadata")#>
+	{
+	
+<#+
+foreach (EdmProperty edmProperty in entity.Properties.Where(p => p.TypeUsage.EdmType is PrimitiveType && p.DeclaringType == entity))
+{
+#>
+		/// <summary>
+		/// <#=code.Escape(edmProperty)#> buddy property
+		/// </summary>
+		<#=EfUtils.GetPropertyValidationAttributes(ef, code, edmProperty)#>	
+		<#=Accessibility.ForProperty(edmProperty)#> <#=code.Escape(edmProperty.TypeUsage)#> <#=code.Escape(edmProperty)#> { get; set; }
+		
+<#+
+}
+#>
+	}
+	<#+region.End();#>
+	
+<#+
+}
+#>
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

@@ -1,0 +1,408 @@
+﻿<#+
+// <copyright file="Repo.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class RepoCs : Template
+{
+
+	private string FixCase(string text) {
+		string r = "";
+		if (!string.IsNullOrEmpty(text)) {
+			r = text.Substring(0, 1).ToLowerInvariant();
+			r += text.Substring(1);
+			return r;
+		}
+		return string.Empty;
+	}
+
+	private string GetIdKey(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += ", " + code.Escape(edmProperty.TypeUsage) + " " + FixCase(code.Escape(edmProperty));
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.StartsWith(", ")) { idKey = idKey.Substring(2); } }
+		return idKey;
+	}
+
+	private string GetIdKeyParams(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += ", " + FixCase(code.Escape(edmProperty));
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.StartsWith(", ")) { idKey = idKey.Substring(2); } }
+		return idKey;
+	}
+	
+	private string GetIdKeyXmlDoc(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+        string s = @"/// <param name=""{0}"">{1} (primary key field)</param>";
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += string.Format(s, FixCase(code.Escape(edmProperty)), EfUtils.ParseCamelToProper(code.Escape(edmProperty))) + System.Environment.NewLine;
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.EndsWith(System.Environment.NewLine)) { idKey = idKey.Substring(0, (idKey.Length - System.Environment.NewLine.Length)); } }
+		return idKey;
+	}
+	
+	private string GetIdKeyLinq(CodeGenerationTools code, MetadataTools ef, EntityType table) {
+		string idKey = string.Empty;
+		foreach (EdmProperty edmProperty in table.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, table))) {
+			if (ef.IsKey(edmProperty)) {
+				idKey += "g." + code.Escape(edmProperty) + " == " + FixCase(code.Escape(edmProperty)) + " && ";
+			}
+		}
+		if (!string.IsNullOrEmpty(idKey)) { if (idKey.EndsWith(" && ")) { idKey = idKey.Substring(0, idKey.Length -4).Trim(); } }
+		return idKey;
+	}
+	
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);	
+
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+#>
+<#=EfUtils.WriteHeader(new string[] {"System.ComponentModel", "System.Web", "System.Data", 
+	"System.Data.Common", "System.Data.Objects", "System.Data.EntityClient", "System.Linq"})#>
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+
+/// <summary>
+/// Unit of work interface defines a block of work to process in a transaction
+/// </summary>
+interface IUnitOfWork
+{
+    /// <summary>
+    /// Commits the changes to the database
+    /// </summary>
+    int Commit();
+}
+
+/// <summary>
+/// Repository pattern interface
+/// </summary>
+/// <typeparam name="T">Type of repository model</typeparam>
+/// <remarks>
+/// <para>
+/// The <c>IEntityRepository</c> interface is utilized because it 
+/// enables us to have a fake entity context for testing. By using 
+/// a fake entity, it allows us to write unit tests that can test 
+/// the repository.
+/// </para>
+/// <example>
+/// <code>
+/// using (MyEntities context = new MyEntities())
+/// {
+///     EntityRepo Repo = new EntityRepo(context);
+///     if ((from g in Repo.Contact.List() where 
+///               g.Email == email select g).Count() == 0)
+///     {
+///         Contact contact = new Contact();
+///         contact.Email = email;
+///         contact.DateAdded = DateTime.Now;
+///
+///         Repo.Contact.Add(contact);
+///     }
+/// }
+/// </code>
+/// </example>
+/// </remarks>
+public interface IEntityRepository<T>
+{
+	/// <summary>
+	/// Adds an entity in the database
+	/// </summary>
+	/// <param name="entity">The entity to add</param>
+	void Add(T entity);
+
+    /// <summary>
+    /// Deletes an entity from the database
+    /// </summary>
+    /// <param name="entity">The entity to delete</param>
+	void Delete(T entity);
+
+	//Sub DeleteById(ByVal id As Integer)
+	//Function GetById(ByVal id As Integer) As T
+	
+    /// <summary>
+    /// Retrieves a list of entities, which is filterable due to being an 
+    /// IQueryable.
+    /// </summary>
+    /// <returns>List of entities</returns>
+	IQueryable<T> List();
+	
+    /// <summary>
+    /// Updates the entity in the database
+    /// </summary>
+    /// <param name="entity">The entity to update</param>
+	void Update(T entity);
+
+    /// <summary>
+    /// Whether the model has validation errors
+    /// </summary>
+	bool HasValidationErrors { get; set; }
+
+    /// <summary>
+    /// Validation errors string
+    /// </summary>
+    /// <remarks>Will be null if no errors</remarks>
+	string ValidationErrors { get; set; }
+}
+
+/// <summary>
+/// Main repository for the Entities
+/// </summary>
+/// <remarks></remarks>
+public sealed partial class EntityRepo
+{
+
+
+	private IContext context;
+
+    /// <summary>
+    /// Repository Constructor
+    /// </summary>
+    /// <param name="context">The context to use</param>
+	public EntityRepo(IContext context)
+	{
+		this.context = context;
+	}
+	
+<#+
+	foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>().OrderBy(e => e.Name)) {
+		var entity = entitySet.ElementType;
+	
+#>
+    private <#=code.Escape(entity.Name + "Repo")#> <#=code.Escape("_" + entity.Name)#>;
+    /// <summary>
+    /// <#=code.Escape(entity.Name)#> repo
+    /// </summary>
+    /// <seealso cref="<#=code.Escape(entity.Name)#>">Model: <#=code.Escape(entity.Name)#></seealso>
+    public <#=code.Escape(entity.Name + "Repo")#> <#=code.Escape(entity.Name)#>
+	{
+		get
+		{
+            if (<#=code.Escape("_" + entity.Name)#> == null) 
+			{
+				<#=code.Escape("_" + entity.Name)#> = new <#=code.Escape(entity.Name + "Repo")#>(this.context);
+			}
+            return <#=code.Escape("_" + entity.Name)#>;
+		}
+	}
+
+<#+
+	}
+#>
+        /// <summary>
+        /// Commits the changes to the database
+        /// </summary>
+		/// <returns>Returns number of records affected</returns>
+        public int Commit()
+        {
+            return context.Save();
+        }
+
+}
+
+
+<#+
+	foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>().OrderBy(e => e.Name)) {
+		var entity = entitySet.ElementType;	
+#>
+    /// <summary>
+    /// Repository for the <#=code.Escape(entity.Name)#> model
+    /// </summary>
+	public partial class <#=code.Escape(entity.Name + "Repo")#> : IEntityRepository<<#=code.Escape(entity.Name)#>>
+	{
+	
+	<#+region.Begin("Constructors");#>
+	
+    /// <summary>
+    /// Constructor for the <#=code.Escape(entity.Name + "Repo")#> repository
+    /// </summary>
+    /// <param name="c">The context to use</param>
+	public <#=code.Escape(entity.Name + "Repo")#>(IContext c)
+	{
+		this.context = c;
+		HasValidationErrors = false;
+		ValidationErrors = string.Empty;
+	}
+	<#+region.End();#>
+
+	<#+region.Begin("Methods");#>
+
+    /// <summary>
+    /// Add a entity to the database
+    /// </summary>
+    /// <param name="entity">Entity to process</param>
+    [DataObjectMethod(DataObjectMethodType.Insert, false)]
+    public void Add(<#=code.Escape(entity.Name)#> entity)
+	{
+        HasValidationErrors = false;
+        ValidationErrors = string.Empty;
+        Validate(entity);
+        if (HasValidationErrors == false)
+		{
+			this.context.<#=code.Escape(entitySet.Name)#>.AddObject(entity);
+			// SaveChanges();
+        }
+    }
+	
+    /// <summary>
+    /// Delete an entity from the database
+    /// </summary>
+    /// <param name="entity">Entity to process</param>
+	[DataObjectMethod(DataObjectMethodType.Delete, false)]
+    public void Delete(<#=code.Escape(entity.Name)#> entity)
+	{
+        this.context.<#=code.Escape(entitySet.Name)#>.DeleteObject(entity);
+        // this.SaveChanges();
+	}
+
+    /// <summary>
+    /// Update an entity in the database
+    /// </summary>
+    /// <param name="entity">Entity to process</param>
+    [DataObjectMethod(DataObjectMethodType.Update, false)]
+    public void Update(<#=code.Escape(entity.Name)#> entity)
+	{
+		this.HasValidationErrors = false;
+		this.ValidationErrors = string.Empty;
+		this.Validate(entity);
+		if (!this.HasValidationErrors) 
+		{
+			// Not needed for update
+			// this.context.<#=code.Escape(entitySet.Name)#>.AddObject(entity);
+			// this.SaveChanges();
+		}
+    }
+
+<#+
+foreach (EdmProperty edmProperty in entity.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, entity))) {
+	if (ef.IsKey(edmProperty)) {
+#>
+    /// <summary>
+    /// Gets an entity in the database
+    /// </summary>
+    <#=GetIdKeyXmlDoc(code, ef, entity)#>
+	/// <returns>Returns the entity</returns>
+    [DataObjectMethod(DataObjectMethodType.Select, false)]
+    public <#=code.Escape(entity.Name)#> GetById(<#=GetIdKey(code, ef, entity)#>)
+	{
+		return (from g in this.context.<#=code.Escape(entitySet.Name)#> where <#=GetIdKeyLinq(code, ef, entity)#> select g).Take(1).FirstOrDefault();
+    }
+<#+
+		break;
+	}
+}
+
+foreach (EdmProperty edmProperty in entity.Properties.Where((EdmProperty p) => p.TypeUsage.EdmType is PrimitiveType && object.ReferenceEquals(p.DeclaringType, entity))) {
+	if (ef.IsKey(edmProperty)) {
+#>
+    /// <summary>
+    /// Deletes an entity from the database
+    /// </summary>
+    <#=GetIdKeyXmlDoc(code, ef, entity)#>
+    [DataObjectMethod(DataObjectMethodType.Delete, false)]
+    public void DeleteById(<#=GetIdKey(code, ef, entity)#>)
+	{
+		<#=code.Escape(entity.Name)#> entity = GetById(<#= GetIdKeyParams(code, ef, entity)#>);
+		if (entity != null) { Delete(entity); }
+    }
+<#+
+		break;
+	}
+}
+#>
+
+    /// <summary>
+    /// Gets a list of entities from the database
+    /// </summary>
+	/// <returns>Returns a queriable list of entities</returns>
+	[DataObjectMethod(DataObjectMethodType.Select, false)]
+    public System.Linq.IQueryable<<#=code.Escape(entity.Name)#>> List()
+	{
+        return this.context.<#=code.Escape(entitySet.Name)#>;
+    }
+
+    //void Validate(Resolution entity)
+    //{
+    //    HasValidationErrors = false;
+    //    ValidationErrors = string.Empty;
+
+    //    // TODO: Validate the entry here.
+
+    //    if (!string.IsNullOrEmpty(ValidationErrors))
+    //        HasValidationErrors = true;
+    //}
+		
+    /// <summary>
+    /// Partial method to validate an entity from the database
+    /// </summary>
+    /// <param name="entity">entity to validate</param>
+	partial void Validate(<#=code.Escape(entity.Name)#> entity);
+
+	<#+region.End();#>
+	
+	<#+region.Begin("Properties");#>
+	
+		private IContext context;
+
+		private bool _HasValidationErrors;
+
+        /// <summary>
+        /// Returns whether the model has validation errors
+        /// </summary>
+		public bool HasValidationErrors
+        {
+            get
+            {
+                return _HasValidationErrors;
+            }
+            set
+            {
+                _HasValidationErrors = value;
+            }
+        }
+
+		private string _ValidationErrors;
+
+        /// <summary>
+        /// Returns the validation errors for the model
+        /// </summary>
+        /// <remarks>Will be null if there is no errors</remarks>
+		public string ValidationErrors
+        {
+            get
+            {
+                return _ValidationErrors;
+            }
+            set
+            {
+                _ValidationErrors = value;
+            }
+        }
+
+	<#+region.End();#>
+	}
+<#+
+}
+#>
+
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>

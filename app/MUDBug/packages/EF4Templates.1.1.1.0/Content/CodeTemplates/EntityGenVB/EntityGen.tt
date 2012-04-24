@@ -1,0 +1,113 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#@ output extension="txt" #>
+<#@ include file="T4Toolbox.tt" #>
+<#@ include file="EF.Utility.VB.ttinclude"#>
+<#@ include file="Includes\EfUtils.ttinclude"#>
+<#@ include file="Includes\EntityGenerator.ttinclude"#>
+
+<#@ include file="Templates\Self-Tracking\IContext.vb.ttinclude" #>
+<#@ include file="Templates\Self-Tracking\Context.vb.ttinclude" #>
+<#@ include file="Templates\Self-Tracking\Context.Extensions.vb.ttinclude" #>
+<#@ include file="Templates\Self-Tracking\FakeContext.vb.ttinclude" #>
+<#@ include file="Templates\Self-Tracking\Model.vb.ttinclude" #>
+
+<#@ include file="Templates\Repository-Pattern\Repo.vb.ttinclude" #>
+<#@ include file="Templates\Validation\Validation.vb.ttinclude" #>
+<#@ include file="Templates\ODataService\DataService.svc.ttinclude" #>
+<#@ include file="Templates\ODataService\DataService.svc.vb.ttinclude" #>
+<#@ include file="Templates\UnitTest\EntityRepo.Test.vb.ttinclude" #>
+<#@ include file="Templates\UnitTest\FakeEntities.Test.vb.ttinclude" #>
+<#@ include file="Templates\UnitTest\FakeObjectSet.Test.vb.ttinclude" #>
+<#
+' <copyright file="EntityGen.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+	' ****************************************************************
+	' ** Description:
+	' ****************************************************************
+	' This template generates a bunch of different code.
+	'   1. POCO self-tracking entities with IContext, so it can be 
+	'      unit tested. It also includes a fake context for testing.
+	'   2. Validation, using data annotations, for WPF, ASP.NET and 
+	'      Silverlight RIA Services.
+	'
+	' ****************************************************************
+	' ** References needed: (depending on what is generated)
+	' ****************************************************************
+	'   System.ComponentModel.DataAnnotations
+	'   System.Data.Entity
+	'   System.Data.Services
+	'   System.Data.Services.Client
+	'   System.Runtime.Serialization
+	'   System.Security
+	'   System.ServiceModel
+	'   System.ServiceModel.Web
+	'   System.Web
+	'   System.Web.ApplicationServices
+	'
+	' ****************************************************************
+	' ** Change Log
+	' ****************************************************************
+	' 2010/07/01 - Initial creation
+	' 2010/09/14 - Added xml documentation
+	' 2010/09/17 - Added unit tests for repository and fake objectset
+	' 2010/09/27 - Changed EntityRepo to use IUnitOfWork and modified 
+	'            unit tests so they properly use the GetById() method
+	' 2010/10/12 - Fixed bug in the fake object set that would cause
+	'              unit tests to fail
+	' 2010/12/03 - Fixed bug with entityset-entity naming with plurals
+	' 2011/12/01 - Added IDisposable to IContext so you can use a 
+	'              using statement with it.
+
+	' Location to your entity model .edmx file
+	Dim inputFile As String = "..\..\TestModel.edmx"
+
+	' **********************************************************************
+	' Don't modify the code below 
+	' **********************************************************************
+	Dim code As New CodeGenerationTools(Me)
+    Dim loader As New MetadataLoader(Me)
+    Dim ef As New MetadataTools(Me)
+    Dim metadataWorkspace As MetadataWorkspace = Nothing
+    Dim allMetadataLoaded As Boolean = loader.TryLoadAllMetadata(inputFile, metadataWorkspace)
+	EntityGenerator.EdmxFile = inputFile
+	If allMetadataLoaded Then
+		EntityGenerator.ItemCollection = DirectCast(metadataWorkspace.GetItemCollection(DataSpace.CSpace), EdmItemCollection)
+		EntityGenerator.StoreItemCollection = DirectCast(metadataWorkspace.GetItemCollection(DataSpace.SSpace), StoreItemCollection)
+		EntityGenerator.MetadataWorkspace = metadataWorkspace
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If Not container Is Nothing Then
+			EntityGenerator.EntityContainerName = container.Name
+		Else
+			Throw New TransformationException("No code generated because container is empty.")
+			Return "' No code generated because container is empty."
+		End If
+	Else
+		Throw New TransformationException("No code generated because of an error.")
+		Return "' No code generated because of an error."
+	End If
+	' **********************************************************************
+	' Modify this stuff below
+	' **********************************************************************
+
+	' Namespace
+	EntityGenerator.NamespaceName = "SomeNamespace" ' code.VsNamespaceSuggestion()
+	EntityGenerator.Language = DefLanguage.VB
+	
+	EntityGenerator.Technology = DefTechnology.ASPNET
+
+	' Allow certain parts of the generated code to be excluded from code coverage or
+	' code contracts
+	EntityGenerator.ExcludeFromCodeCoverage = true
+
+	EntityGenerator.GenerateODataService = false
+	EntityGenerator.GenerateRepository = true
+	EntityGenerator.GenerateUnitTests = false
+	EntityGenerator.GenerateValidation  = true
+
+	Dim gen as New EntityGenerator()
+	gen.Run()
+
+#>
+<#="Files generated"#>

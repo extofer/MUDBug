@@ -1,0 +1,120 @@
+﻿<#@ template language="VB" hostspecific="True" debug="True" #>
+<#+
+' <copyright file="EntityRepoTest.vb.tt" company="CompDJ">
+'  Copyright © 2010 CompDJ. All Rights Reserved.
+' </copyright>
+
+Public Class FakeEntitiesTestVb
+	Inherits Template
+
+	Public Function GetKeyPropName(entity As EntityType, ef As MetadataTools, code As CodeGenerationTools) As String
+		Dim RetVal As String = String.Empty
+
+		For Each edmProperty As EdmProperty In entity.Properties.Where(Function(p) TypeOf p.TypeUsage.EdmType Is PrimitiveType AndAlso p.DeclaringType Is entity)
+			If ef.IsKey(edmProperty) Then
+				RetVal = code.Escape(edmProperty)
+				Exit For
+			End If
+		Next
+		Return RetVal
+	End Function
+
+	Public Overrides Function TransformText() As String
+		Dim code as New CodeGenerationTools(Me)
+		Dim region as New CodeRegion(Me)
+	    Dim ef As New MetadataTools(Me)
+		
+		Dim container As EntityContainer = EntityGenerator.ItemCollection.GetItems(Of EntityContainer)().FirstOrDefault()
+		If container Is Nothing Then
+			Return "// No EntityContainer exists in the model, so no code was generated"
+		End If
+		
+#>
+<#=EfUtils.WriteHeader()#>
+
+Imports System
+Imports System.Collections 
+Imports System.Collections.Generic
+Imports System.Data.Objects
+Imports System.Linq
+Imports Microsoft.VisualStudio.TestTools.UnitTesting
+Imports <#=EntityGenerator.NamespaceName#>
+
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+<#+
+	PushIndent(CodeRegion.GetIndent(1))
+#>
+
+	''' <summary>
+	'''This is a test class for FakeEntities and is intended
+	'''to contain all FakeEntities Unit Tests
+	'''</summary>
+	<TestClass> _
+	Public Class FakeEntitiesTest
+
+        ''' <summary>
+        ''' Tests whether the fake entities constructor is not null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeEntities_Constructor_ShouldNotBeNull()
+			Dim target As New <#=code.Escape("Fake" + container.Name)#>()
+			Assert.IsNotNull(target)
+		End Sub
+
+        ''' <summary>
+        ''' Tests whether the fake entities constructor with a connection string is not null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeEntities_ConstructorWithConnectionString_ShouldNotBeNull()
+			Dim conn As String = "No connection string"
+			Dim target As New <#=code.Escape("Fake" + container.Name)#>(conn)
+			Assert.IsNotNull(target)
+		End Sub
+
+        ''' <summary>
+        ''' Tests whether the save method returns one
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeEntities_Save_ShouldReturnOne()
+			Dim target As New <#=code.Escape("Fake" + container.Name)#>()
+			'target.Initialize()
+			Dim actual As Integer = target.Save()
+			Dim expected As Integer = 1
+			target.Dispose()
+			Assert.AreEqual(Of Integer)(expected, actual)
+		End Sub
+<#+  
+	For Each entitySet As EntitySet In container.BaseEntitySets.OfType(Of EntitySet)().OrderBy(Function(e) e.Name)
+		Dim entity as System.Data.Metadata.Edm.EntityType = entitySet.ElementType
+#>
+
+		#Region "<#=code.Escape(entitySet)#>"
+		
+        ''' <summary>
+        ''' Tests whether the <#=code.Escape(entitySet)#> property is not null
+        ''' </summary>
+        ''' <remarks></remarks>
+		<TestMethod> _
+		Public Sub FakeEntities_<#=code.Escape(entitySet)#>_ShouldNotBeNull()
+			Dim target As New <#=code.Escape("Fake" + container.Name)#>()
+			Dim actual As IObjectSet(Of <#=code.Escape(entity)#>) = target.<#=code.Escape(entitySet)#>
+			Assert.IsNotNull(actual)
+		End Sub
+
+		#End Region
+<#+
+	Next
+#>
+
+	End Class
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName + ".Tests"))#>
+<#+
+        Return Me.GenerationEnvironment.ToString()
+	End Function
+		
+End Class
+#>

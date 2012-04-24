@@ -1,0 +1,190 @@
+﻿<#+
+// <copyright file="Context.cs.tt" company="CompDJ">
+//  Copyright © 2010 CompDJ. All Rights Reserved.
+// </copyright>
+
+public class ContextCs : Template
+{
+	string AccessibilityAndVirtual(string accessibility)
+	{
+		if (accessibility != "private")
+		{
+			return accessibility + " virtual";
+		}
+
+		return accessibility;
+	}
+
+	public override string TransformText()
+	{
+		CodeGenerationTools code = new CodeGenerationTools(this);
+		CodeRegion region = new CodeRegion(this);
+		MetadataTools ef = new MetadataTools(this);
+		
+		string namespaceName = EntityGenerator.NamespaceName;
+		
+		EntityContainer container = EntityGenerator.ItemCollection.GetItems<EntityContainer>().FirstOrDefault();
+		if (container == null) {
+			return "// No EntityContainer exists in the model, so no code was generated";
+		}
+		
+#>
+<#=EfUtils.WriteContextHeader(new string[] {"System.Data.EntityClient", "System.Data.Objects"})#>
+<#=EfUtils.WriteBeginNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+	
+	/// <summary>
+	/// Main entity context
+	/// </summary>
+	<#=EfUtils.ReturnExcludeFromCodeCoverageString()#><#=Accessibility.ForType(container)#> partial class <#=code.Escape(container)#> : ObjectContext, IContext
+	{
+	
+        /// <summary>Connection String</summary>
+		public const string SettingsConnectionString = "name=<#=container.Name#>";
+		/// <summary>Container name</summary>
+		public const string ContainerName = "<#=container.Name#>";
+
+    	#region Constructors
+
+        /// <summary>
+        /// Constructor for the entity class
+        /// </summary>
+		public <#=code.Escape(container)#>()
+			: base(SettingsConnectionString, ContainerName)
+		{
+			Initialize();
+		}
+
+        /// <summary>
+        /// Constructor for the entity class
+        /// </summary>
+        /// <param name="connectionString">Connection string</param>
+		public <#=code.Escape(container)#>(string connectionString)
+			: base(connectionString, ContainerName)
+		{
+			Initialize();
+		}
+
+        /// <summary>
+        /// Constructor for the entity class
+        /// </summary>
+        /// <param name="connection">Connection</param>
+		public <#=code.Escape(container)#>(EntityConnection connection)
+			: base(connection, ContainerName)
+		{
+			Initialize();
+		}
+
+        private void Initialize()
+        {
+            // Creating proxies requires the use of the ProxyDataContractResolver and
+            // may allow lazy loading which can expand the loaded graph during serialization.
+            ContextOptions.ProxyCreationEnabled = false;
+            ObjectMaterialized += new ObjectMaterializedEventHandler(HandleObjectMaterialized);
+        }
+    
+        private void HandleObjectMaterialized(object sender, ObjectMaterializedEventArgs e)
+        {
+            var entity = e.Entity as IObjectWithChangeTracker;
+            if (entity != null)
+            {
+                bool changeTrackingEnabled = entity.ChangeTracker.ChangeTrackingEnabled;
+                try
+                {
+                    entity.MarkAsUnchanged();
+                }
+                finally
+                {
+                    entity.ChangeTracker.ChangeTrackingEnabled = changeTrackingEnabled;
+                }
+                this.StoreReferenceKeyValues(entity);
+            }
+        }
+
+		#endregion
+		
+<#+
+        region.Begin("ObjectSet Properties", 2);
+
+        foreach (EntitySet entitySet in container.BaseEntitySets.OfType<EntitySet>())
+        {
+#>
+
+	/// <summary>
+	/// Object set for <#=code.Escape(entitySet)#> model
+	/// </summary>
+	<#=Accessibility.ForReadOnlyProperty(entitySet)#> IObjectSet<<#=code.Escape(entitySet.ElementType)#>> <#=code.Escape(entitySet)#>
+    {
+        get { return <#=code.FieldName(entitySet) #>  ?? (<#=code.FieldName(entitySet)#> = CreateObjectSet<<#=code.Escape(entitySet.ElementType)#>>("<#=entitySet.Name#>")); }
+    }
+    private ObjectSet<<#=code.Escape(entitySet.ElementType)#>> <#=code.FieldName(entitySet)#>;
+<#+
+        }
+
+        region.End();
+
+        region.Begin("Function Imports");
+
+        foreach (EdmFunction edmFunction in container.FunctionImports)
+        {
+            var parameters = FunctionImportParameter.Create(edmFunction.Parameters, code, ef);
+            string paramList = String.Join(", ", parameters.Select(p => p.FunctionParameterType + " " + p.FunctionParameterName).ToArray());
+            if (edmFunction.ReturnParameter == null)
+            {
+                continue;
+            }
+            string returnTypeElement = code.Escape(ef.GetElementType(edmFunction.ReturnParameter.TypeUsage));
+
+#>
+	/// <summary>
+	/// Object set for <#=code.Escape(returnTypeElement)#> model
+	/// </summary>
+	/// <returns>ObjectResult of type <#=returnTypeElement#></returns>
+    <#=AccessibilityAndVirtual(Accessibility.ForMethod(edmFunction))#> ObjectResult<<#=returnTypeElement#>> <#=code.Escape(edmFunction)#>(<#=paramList#>)
+    {
+<#+
+            foreach (var parameter in parameters)
+            {
+                if (!parameter.NeedsLocalVariable)
+                {
+                    continue;
+                }
+#>
+
+        ObjectParameter <#=parameter.LocalVariableName#>;
+
+        if (<#=parameter.IsNullableOfT ? parameter.FunctionParameterName + ".HasValue" : parameter.FunctionParameterName + " != null"#>)
+        {
+            <#=parameter.LocalVariableName#> = new ObjectParameter("<#=parameter.EsqlParameterName#>", <#=parameter.FunctionParameterName#>);
+        }
+        else
+        {
+            <#=parameter.LocalVariableName#> = new ObjectParameter("<#=parameter.EsqlParameterName#>", typeof(<#=parameter.RawClrTypeName#>));
+        }
+<#+
+            }
+#>
+        return base.ExecuteFunction<<#=returnTypeElement#>>("<#=edmFunction.Name#>"<#=code.StringBefore(", ", String.Join(", ", parameters.Select(p => p.ExecuteParameterName).ToArray()))#>);
+    }
+<#+
+        }
+        region.End();
+#>
+
+    /// <summary>
+    /// Persists the changes to the database
+    /// </summary>
+    /// <returns>The number of records affected</returns>
+	public int Save()
+	{
+		return base.SaveChanges();
+	}
+		
+	}
+
+<#=EfUtils.WriteEndNamespace(code.EscapeNamespace(EntityGenerator.NamespaceName))#>
+<#+
+		return this.GenerationEnvironment.ToString();
+	}
+}
+
+#>
