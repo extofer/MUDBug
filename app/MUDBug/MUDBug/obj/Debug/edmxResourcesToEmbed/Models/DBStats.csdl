@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Schema Namespace="DBStatsModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+  <EntityContainer Name="DBStatsEntities" annotation:LazyLoadingEnabled="true">
+    <EntitySet Name="DayCheckLists" EntityType="DBStatsModel.DayCheckList" />
+    <EntitySet Name="File_growth" EntityType="DBStatsModel.File_growth" />
+    <EntitySet Name="IndexFrags" EntityType="DBStatsModel.IndexFrag" />
+    <EntitySet Name="MonthCheckLists" EntityType="DBStatsModel.MonthCheckList" />
+    <EntitySet Name="ProcdureExecutionTimes" EntityType="DBStatsModel.ProcdureExecutionTime" />
+    <EntitySet Name="MUDBUGDriveSpaces" EntityType="DBStatsModel.MUDBUGDriveSpace" />
+    <EntitySet Name="MUDBugErrorLogs" EntityType="DBStatsModel.MUDBugErrorLog" />
+    <EntitySet Name="MUDBugRestarts" EntityType="DBStatsModel.MUDBugRestart" />
+    <FunctionImport Name="CallDayCheck" />
+  </EntityContainer>
+  <EntityType Name="DayCheckList">
+    <Key>
+      <PropertyRef Name="DayID" />
+    </Key>
+    <Property Name="DayID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="String" Nullable="false" MaxLength="50" Unicode="false" FixedLength="false" />
+    <Property Name="EventDate" Type="DateTime" />
+    <Property Name="EVENT" Type="String" Nullable="false" MaxLength="2000" Unicode="false" FixedLength="false" />
+  </EntityType>
+  <EntityType Name="File_growth">
+    <Key>
+      <PropertyRef Name="FileGrowthID" />
+    </Key>
+    <Property Name="FileGrowthID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="Physical_Name" Type="String" MaxLength="200" Unicode="false" FixedLength="false" />
+    <Property Name="Size_in_MB" Type="Int32" />
+    <Property Name="Size_in_GB" Type="Int32" />
+    <Property Name="Reading_date" Type="DateTime" />
+  </EntityType>
+  <EntityType Name="IndexFrag">
+    <Key>
+      <PropertyRef Name="IndexFrag1" />
+    </Key>
+    <Property Name="IndexFrag1" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="DatabaseName" Type="String" Nullable="false" MaxLength="100" Unicode="false" FixedLength="false" />
+    <Property Name="TableName" Type="String" Nullable="false" MaxLength="100" Unicode="false" FixedLength="false" />
+    <Property Name="IndexName" Type="String" MaxLength="200" Unicode="false" FixedLength="false" />
+    <Property Name="PercentFragmented" Type="Int32" Nullable="false" />
+  </EntityType>
+  <EntityType Name="MonthCheckList">
+    <Key>
+      <PropertyRef Name="MonthID" />
+    </Key>
+    <Property Name="MonthID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="String" Nullable="false" MaxLength="50" Unicode="false" FixedLength="false" />
+    <Property Name="EventDate" Type="DateTime" />
+    <Property Name="EVENT" Type="String" Nullable="false" MaxLength="2000" Unicode="false" FixedLength="false" />
+  </EntityType>
+  <EntityType Name="ProcdureExecutionTime">
+    <Key>
+      <PropertyRef Name="ProdExecTimeID" />
+    </Key>
+    <Property Name="ProdExecTimeID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="dbname" Type="String" Nullable="false" MaxLength="200" Unicode="false" FixedLength="false" />
+    <Property Name="spname" Type="String" MaxLength="2000" Unicode="false" FixedLength="false" />
+    <Property Name="ExeCount" Type="Int64" />
+    <Property Name="ExePerSec" Type="Int64" />
+    <Property Name="AvgWorkerTime" Type="Int64" />
+    <Property Name="TotalWorkerTime" Type="Int64" />
+    <Property Name="AvgElapsedTime" Type="Int64" />
+    <Property Name="MaxLogicalReads" Type="Int64" />
+    <Property Name="MaxLogicalWrites" Type="Int64" />
+    <Property Name="TotalPhysicalReads" Type="Int64" />
+    <Property Name="DateRecorded" Type="DateTime" />
+  </EntityType>
+  <EntityType Name="MUDBUGDriveSpace">
+    <Key>
+      <PropertyRef Name="DayID" />
+      <PropertyRef Name="EventStatus" />
+      <PropertyRef Name="EVENT" />
+    </Key>
+    <Property Name="DayID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="String" Nullable="false" MaxLength="50" Unicode="false" FixedLength="false" />
+    <Property Name="EventDate" Type="DateTime" />
+    <Property Name="EVENT" Type="String" Nullable="false" MaxLength="2000" Unicode="false" FixedLength="false" />
+  </EntityType>
+  <EntityType Name="MUDBugErrorLog">
+    <Key>
+      <PropertyRef Name="DayID" />
+      <PropertyRef Name="EventStatus" />
+      <PropertyRef Name="EVENT" />
+    </Key>
+    <Property Name="DayID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="String" Nullable="false" MaxLength="50" Unicode="false" FixedLength="false" />
+    <Property Name="EventDate" Type="DateTime" />
+    <Property Name="EVENT" Type="String" Nullable="false" MaxLength="2000" Unicode="false" FixedLength="false" />
+  </EntityType>
+  <EntityType Name="MUDBugRestart">
+    <Key>
+      <PropertyRef Name="DayID" />
+      <PropertyRef Name="EventStatus" />
+      <PropertyRef Name="EVENT" />
+    </Key>
+    <Property Name="DayID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="String" Nullable="false" MaxLength="50" Unicode="false" FixedLength="false" />
+    <Property Name="EventDate" Type="DateTime" />
+    <Property Name="EVENT" Type="String" Nullable="false" MaxLength="2000" Unicode="false" FixedLength="false" />
+  </EntityType>
+</Schema>

@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+  <EntityContainerMapping StorageEntityContainer="DBStatsModelStoreContainer" CdmEntityContainer="DBStatsEntities">
+    <EntitySetMapping Name="DayCheckLists">
+      <EntityTypeMapping TypeName="DBStatsModel.DayCheckList">
+        <MappingFragment StoreEntitySet="DayCheckList">
+          <ScalarProperty Name="DayID" ColumnName="DayID" />
+          <ScalarProperty Name="EventStatus" ColumnName="EventStatus" />
+          <ScalarProperty Name="EventDate" ColumnName="EventDate" />
+          <ScalarProperty Name="EVENT" ColumnName="EVENT" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="File_growth">
+      <EntityTypeMapping TypeName="DBStatsModel.File_growth">
+        <MappingFragment StoreEntitySet="File_growth">
+          <ScalarProperty Name="FileGrowthID" ColumnName="FileGrowthID" />
+          <ScalarProperty Name="Physical_Name" ColumnName="Physical_Name" />
+          <ScalarProperty Name="Size_in_MB" ColumnName="Size_in_MB" />
+          <ScalarProperty Name="Size_in_GB" ColumnName="Size_in_GB" />
+          <ScalarProperty Name="Reading_date" ColumnName="Reading_date" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="IndexFrags">
+      <EntityTypeMapping TypeName="DBStatsModel.IndexFrag">
+        <MappingFragment StoreEntitySet="IndexFrag">
+          <ScalarProperty Name="IndexFrag1" ColumnName="IndexFrag" />
+          <ScalarProperty Name="DatabaseName" ColumnName="DatabaseName" />
+          <ScalarProperty Name="TableName" ColumnName="TableName" />
+          <ScalarProperty Name="IndexName" ColumnName="IndexName" />
+          <ScalarProperty Name="PercentFragmented" ColumnName="PercentFragmented" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="MonthCheckLists">
+      <EntityTypeMapping TypeName="DBStatsModel.MonthCheckList">
+        <MappingFragment StoreEntitySet="MonthCheckList">
+          <ScalarProperty Name="MonthID" ColumnName="MonthID" />
+          <ScalarProperty Name="EventStatus" ColumnName="EventStatus" />
+          <ScalarProperty Name="EventDate" ColumnName="EventDate" />
+          <ScalarProperty Name="EVENT" ColumnName="EVENT" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="ProcdureExecutionTimes">
+      <EntityTypeMapping TypeName="DBStatsModel.ProcdureExecutionTime">
+        <MappingFragment StoreEntitySet="ProcdureExecutionTimes">
+          <ScalarProperty Name="ProdExecTimeID" ColumnName="ProdExecTimeID" />
+          <ScalarProperty Name="dbname" ColumnName="dbname" />
+          <ScalarProperty Name="spname" ColumnName="spname" />
+          <ScalarProperty Name="ExeCount" ColumnName="ExeCount" />
+          <ScalarProperty Name="ExePerSec" ColumnName="ExePerSec" />
+          <ScalarProperty Name="AvgWorkerTime" ColumnName="AvgWorkerTime" />
+          <ScalarProperty Name="TotalWorkerTime" ColumnName="TotalWorkerTime" />
+          <ScalarProperty Name="AvgElapsedTime" ColumnName="AvgElapsedTime" />
+          <ScalarProperty Name="MaxLogicalReads" ColumnName="MaxLogicalReads" />
+          <ScalarProperty Name="MaxLogicalWrites" ColumnName="MaxLogicalWrites" />
+          <ScalarProperty Name="TotalPhysicalReads" ColumnName="TotalPhysicalReads" />
+          <ScalarProperty Name="DateRecorded" ColumnName="DateRecorded" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="MUDBUGDriveSpaces">
+      <EntityTypeMapping TypeName="DBStatsModel.MUDBUGDriveSpace">
+        <MappingFragment StoreEntitySet="MUDBUGDriveSpace">
+          <ScalarProperty Name="DayID" ColumnName="DayID" />
+          <ScalarProperty Name="EventStatus" ColumnName="EventStatus" />
+          <ScalarProperty Name="EventDate" ColumnName="EventDate" />
+          <ScalarProperty Name="EVENT" ColumnName="EVENT" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="MUDBugErrorLogs">
+      <EntityTypeMapping TypeName="DBStatsModel.MUDBugErrorLog">
+        <MappingFragment StoreEntitySet="MUDBugErrorLog">
+          <ScalarProperty Name="DayID" ColumnName="DayID" />
+          <ScalarProperty Name="EventStatus" ColumnName="EventStatus" />
+          <ScalarProperty Name="EventDate" ColumnName="EventDate" />
+          <ScalarProperty Name="EVENT" ColumnName="EVENT" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="MUDBugRestarts">
+      <EntityTypeMapping TypeName="DBStatsModel.MUDBugRestart">
+        <MappingFragment StoreEntitySet="MUDBugRestart">
+          <ScalarProperty Name="DayID" ColumnName="DayID" />
+          <ScalarProperty Name="EventStatus" ColumnName="EventStatus" />
+          <ScalarProperty Name="EventDate" ColumnName="EventDate" />
+          <ScalarProperty Name="EVENT" ColumnName="EVENT" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <FunctionImportMapping FunctionImportName="CallDayCheck" FunctionName="DBStatsModel.Store.DayCheck" />
+  </EntityContainerMapping>
+</Mapping>

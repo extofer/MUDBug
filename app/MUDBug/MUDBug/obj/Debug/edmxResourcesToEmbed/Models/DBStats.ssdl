@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Schema Namespace="DBStatsModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+  <EntityContainer Name="DBStatsModelStoreContainer">
+    <EntitySet Name="DayCheckList" EntityType="DBStatsModel.Store.DayCheckList" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="File_growth" EntityType="DBStatsModel.Store.File_growth" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="IndexFrag" EntityType="DBStatsModel.Store.IndexFrag" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="MonthCheckList" EntityType="DBStatsModel.Store.MonthCheckList" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="ProcdureExecutionTimes" EntityType="DBStatsModel.Store.ProcdureExecutionTimes" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="MUDBUGDriveSpace" EntityType="DBStatsModel.Store.MUDBUGDriveSpace" store:Type="Views" store:Schema="dbo" store:Name="MUDBUGDriveSpace">
+      <DefiningQuery>SELECT 
+      [MUDBUGDriveSpace].[DayID] AS [DayID], 
+      [MUDBUGDriveSpace].[EventStatus] AS [EventStatus], 
+      [MUDBUGDriveSpace].[EventDate] AS [EventDate], 
+      [MUDBUGDriveSpace].[EVENT] AS [EVENT]
+      FROM [dbo].[MUDBUGDriveSpace] AS [MUDBUGDriveSpace]</DefiningQuery>
+    </EntitySet>
+    <EntitySet Name="MUDBugErrorLog" EntityType="DBStatsModel.Store.MUDBugErrorLog" store:Type="Views" store:Schema="dbo" store:Name="MUDBugErrorLog">
+      <DefiningQuery>SELECT 
+      [MUDBugErrorLog].[DayID] AS [DayID], 
+      [MUDBugErrorLog].[EventStatus] AS [EventStatus], 
+      [MUDBugErrorLog].[EventDate] AS [EventDate], 
+      [MUDBugErrorLog].[EVENT] AS [EVENT]
+      FROM [dbo].[MUDBugErrorLog] AS [MUDBugErrorLog]</DefiningQuery>
+    </EntitySet>
+    <EntitySet Name="MUDBugRestart" EntityType="DBStatsModel.Store.MUDBugRestart" store:Type="Views" store:Schema="dbo" store:Name="MUDBugRestart">
+      <DefiningQuery>SELECT 
+      [MUDBugRestart].[DayID] AS [DayID], 
+      [MUDBugRestart].[EventStatus] AS [EventStatus], 
+      [MUDBugRestart].[EventDate] AS [EventDate], 
+      [MUDBugRestart].[EVENT] AS [EVENT]
+      FROM [dbo].[MUDBugRestart] AS [MUDBugRestart]</DefiningQuery>
+    </EntitySet>
+  </EntityContainer>
+  <EntityType Name="DayCheckList">
+    <Key>
+      <PropertyRef Name="DayID" />
+    </Key>
+    <Property Name="DayID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="varchar" Nullable="false" MaxLength="50" />
+    <Property Name="EventDate" Type="datetime" />
+    <Property Name="EVENT" Type="varchar" Nullable="false" MaxLength="2000" />
+  </EntityType>
+  <EntityType Name="File_growth">
+    <Key>
+      <PropertyRef Name="FileGrowthID" />
+    </Key>
+    <Property Name="FileGrowthID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="Physical_Name" Type="varchar" MaxLength="200" />
+    <Property Name="Size_in_MB" Type="int" />
+    <Property Name="Size_in_GB" Type="int" />
+    <Property Name="Reading_date" Type="datetime" />
+  </EntityType>
+  <EntityType Name="IndexFrag">
+    <Key>
+      <PropertyRef Name="IndexFrag" />
+    </Key>
+    <Property Name="IndexFrag" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="DatabaseName" Type="varchar" Nullable="false" MaxLength="100" />
+    <Property Name="TableName" Type="varchar" Nullable="false" MaxLength="100" />
+    <Property Name="IndexName" Type="varchar" MaxLength="200" />
+    <Property Name="PercentFragmented" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="MonthCheckList">
+    <Key>
+      <PropertyRef Name="MonthID" />
+    </Key>
+    <Property Name="MonthID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="varchar" Nullable="false" MaxLength="50" />
+    <Property Name="EventDate" Type="datetime" />
+    <Property Name="EVENT" Type="varchar" Nullable="false" MaxLength="2000" />
+  </EntityType>
+  <EntityType Name="ProcdureExecutionTimes">
+    <Key>
+      <PropertyRef Name="ProdExecTimeID" />
+    </Key>
+    <Property Name="ProdExecTimeID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="dbname" Type="varchar" Nullable="false" MaxLength="200" />
+    <Property Name="spname" Type="varchar" MaxLength="2000" />
+    <Property Name="ExeCount" Type="bigint" />
+    <Property Name="ExePerSec" Type="bigint" />
+    <Property Name="AvgWorkerTime" Type="bigint" />
+    <Property Name="TotalWorkerTime" Type="bigint" />
+    <Property Name="AvgElapsedTime" Type="bigint" />
+    <Property Name="MaxLogicalReads" Type="bigint" />
+    <Property Name="MaxLogicalWrites" Type="bigint" />
+    <Property Name="TotalPhysicalReads" Type="bigint" />
+    <Property Name="DateRecorded" Type="datetime" />
+  </EntityType>
+  <!--Errors Found During Generation:
+      warning 6002: The table/view 'DBStats.dbo.MUDBUGDriveSpace' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+  <EntityType Name="MUDBUGDriveSpace">
+    <Key>
+      <PropertyRef Name="DayID" />
+      <PropertyRef Name="EventStatus" />
+      <PropertyRef Name="EVENT" />
+    </Key>
+    <Property Name="DayID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="varchar" Nullable="false" MaxLength="50" />
+    <Property Name="EventDate" Type="datetime" />
+    <Property Name="EVENT" Type="varchar" Nullable="false" MaxLength="2000" />
+  </EntityType>
+  <!--Errors Found During Generation:
+      warning 6002: The table/view 'DBStats.dbo.MUDBugErrorLog' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+  <EntityType Name="MUDBugErrorLog">
+    <Key>
+      <PropertyRef Name="DayID" />
+      <PropertyRef Name="EventStatus" />
+      <PropertyRef Name="EVENT" />
+    </Key>
+    <Property Name="DayID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="varchar" Nullable="false" MaxLength="50" />
+    <Property Name="EventDate" Type="datetime" />
+    <Property Name="EVENT" Type="varchar" Nullable="false" MaxLength="2000" />
+  </EntityType>
+  <!--Errors Found During Generation:
+      warning 6002: The table/view 'DBStats.dbo.MUDBugRestart' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+  <EntityType Name="MUDBugRestart">
+    <Key>
+      <PropertyRef Name="DayID" />
+      <PropertyRef Name="EventStatus" />
+      <PropertyRef Name="EVENT" />
+    </Key>
+    <Property Name="DayID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+    <Property Name="EventStatus" Type="varchar" Nullable="false" MaxLength="50" />
+    <Property Name="EventDate" Type="datetime" />
+    <Property Name="EVENT" Type="varchar" Nullable="false" MaxLength="2000" />
+  </EntityType>
+  <Function Name="DayCheck" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo" />
+</Schema>

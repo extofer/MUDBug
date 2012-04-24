@@ -6,3 +6,5 @@ C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\MUDBug.p
 C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\obj\Debug\ResolveAssemblyReference.cache
 C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\obj\Debug\MUDBug.Tests.dll
 C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\obj\Debug\MUDBug.Tests.pdb
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\EntityFramework.dll
+C:\Users\extofer\Documents\Dev\MUDBug\app\MUDBug\MUDBug.Tests\bin\Debug\EntityFramework.xml
