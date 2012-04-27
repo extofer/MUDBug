@@ -1,0 +1,6 @@
+*.config
+jquery-1.5*.js
+jquery-ui*.js
+jquery.*.js
+Microsoft*.js
+modernizr*.js
